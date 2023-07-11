@@ -11,8 +11,6 @@ const App = () => {
   const fetchStockData = async () => {
     try {
       const response = await axios.get('https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol=AAPL&interval=5min&apikey=CC1EJTK0U40Z2M9C');
-      const options_data = await axios.get('https://api.marketdata.app/v1/options/quotes/AAPL250117C00150000/');
-      console.log("options data:", options_data)
       const data = Object.entries(response.data['Time Series (5min)']).map(([date, item]) => ({
         date,
         stockPrice: parseFloat(item['4. close'])
@@ -25,16 +23,12 @@ const App = () => {
 
   const fetchOptionData = async () => {
     try {
-      const response = await axios.get('https://sandbox.tradier.com/v1/markets/options/chains', {
-        params: {
-          symbol: 'AAPL',
-          expiration: '2023-07-10'
-        },
-        headers: { Authorization: `Bearer YOUR_TRADIER_API_TOKEN` },
-      });
-      const data = response.data.options.option.map((item) => ({
-        date: item.date,
-        optionPrice: parseFloat(item.last)
+      const response = 0// await axios.get('https://api.polygon.io/v3/reference/options/symbols?apiKey=kmsrYoQHhvAPTv2_Wk7GQwtwSmyk_epK');
+      const res = await axios.get('https://api.polygon.io/v3/reference/options/contracts/O:EVRI240119C00002500?apiKey=kmsrYoQHhvAPTv2_Wk7GQwtwSmyk_epK');
+      console.log("res:", res)
+      const data = response.data.results.map((item) => ({
+        date: item.list_date,
+        optionPrice: item.last
       })).slice(0, 50).reverse();
       setOptionData(data);
     } catch (error) {
@@ -44,7 +38,7 @@ const App = () => {
 
   useEffect(() => {
     fetchStockData();
-    // fetchOptionData();
+    fetchOptionData();
   }, []);
 
   return (
