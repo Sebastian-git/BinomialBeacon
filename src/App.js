@@ -1,49 +1,91 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import React, { useState } from 'react';
+import {Tree} from 'react-tree-graph';
+import 'react-tree-graph/dist/style.css'
+import './App.css';
 
-const App = () => {
-  const [stockPrice, setStockPrice] = useState(0);
-  const [strikePrice, setStrikePrice] = useState(2.5); // Assume a strike price for now
-  const [timeToExpiry, setTimeToExpiry] = useState(365); // Assume 365 days to expiration for now
-  const [riskFreeRate, setRiskFreeRate] = useState(0.01); // Assume a 1% risk-free rate
-  const [volatility, setVolatility] = useState(0.2); // Assume 20% volatility
-  const [steps, setSteps] = useState(100); // Assume 100 steps in the binomial model
-  const [optionPrice, setOptionPrice] = useState(0);
+// Step 1: Set up tree with deisred amount of timesteps first
 
-  const fetchStockData = async () => {
-    try {
-      const response = await axios.get('https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol=AAPL&interval=5min&apikey=CC1EJTK0U40Z2M9C');
-      const data = Object.entries(response.data['Time Series (5min)']).map(([date, item]) => parseFloat(item['4. close']));
-      const currentStockPrice = data[data.length - 1];
-      setStockPrice(currentStockPrice);
-    } catch (error) {
-      console.error('Error fetching stock data: ', error);
+// Step 2: Calculate upPrice and downPrice for nodes
+
+const upPrice = (curPrice, stdDev, timestep) => { return curPrice * Math.exp(stdDev, Math.sqrt(timestep)) }
+
+const downPrice = (upPrice) => {return 1/upPrice}
+
+// Step 3: Calculate option payoff at expiration (works for both curPrice=downPrice and curPrice=upPrice)
+
+const callBuyPayoff = (curPrice, strikePrice) => { return Math.max(curPrice - strikePrice, 0) }
+
+
+/*
+Function to calculate the binomial tree pricing
+
+u and d are the up and down factors, which represent the multiplicative increases or decreases in the stock price at each step.
+r is the risk-free interest rate.
+T is the time to expiration of the option, in years.
+p is the risk-neutral probability, which is used to calculate the expected value of the option.
+*/
+const calculatePrice = (steps, price, u, d, r, T) => {
+  // Calculate the risk-neutral probability
+  let p = (Math.exp(r * T) - d) / (u - d);
+
+  // Create an empty array to hold the prices at each node
+  let prices = Array(steps + 1).fill().map(() => Array(steps + 1));
+
+  // Calculate the prices at each node
+  for (let i = 0; i <= steps; i++) {
+    for (let j = 0; j <= i; j++) {
+      prices[j][i] = price * Math.pow(u, i - j) * Math.pow(d, j);
     }
-  };
+  }
 
-  const calculateOptionPrice = () => {
-    // TODO: Implement the binomial options pricing model here
-    // For now, let's just set the option price to be the stock price
-    setOptionPrice(stockPrice);
-  };
+  return prices;
+};
 
-  useEffect(() => {
-    fetchStockData();
-    calculateOptionPrice();
-  }, [stockPrice, strikePrice, timeToExpiry, riskFreeRate, volatility, steps]);
+
+// Modified dummy data function
+const createData = (steps, price = 100, delta = 10) => {
+  if (steps === 0) {
+    return { name: price.toFixed(2) };
+  }
+
+  return {
+    name: price.toFixed(2),
+    children: [
+      createData(steps - 1, price + delta, delta),
+      createData(steps - 1, price - delta, delta)
+    ]
+  };
+};
+
+function App() {
+  const [steps, setSteps] = useState(1);
+  let data = createData(steps, 100, 10);
 
   return (
-    <div>
-      <h1>Binomial Options Pricing Model</h1>
-      <p>Stock Price: {stockPrice}</p>
-      <p>Strike Price: {strikePrice}</p>
-      <p>Time to Expiry: {timeToExpiry} days</p>
-      <p>Risk-Free Rate: {riskFreeRate * 100}%</p>
-      <p>Volatility: {volatility * 100}%</p>
-      <p>Steps: {steps}</p>
-      <h2>Option Price: {optionPrice}</h2>
+    <div className="App">
+      <h1>Binomial Tree Model Visualization</h1>
+      <div>
+        <label>Timesteps: </label>
+        <input type="range" min="1" max="5" value={steps} 
+          className="slider" onChange={(e) => setSteps(Number(e.target.value))} />
+        <span>{steps}</span>
+      </div>
+      <Tree
+        data={data}
+        height={400 + 150 * (steps/5)}
+        width={500 + 580 * (steps/5)} // normalize so width is based on steps while ensuring steps is in range from 0-1
+        animated
+        svgProps={{
+            className: 'tree',
+        }}
+        textProps={{ 
+            style: {
+                fill: 'green',
+                fontSize: '1.1em',
+            }
+        }}/>
     </div>
   );
-};
+}
 
 export default App;
