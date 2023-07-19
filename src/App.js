@@ -5,16 +5,15 @@ import './App.css';
 
 // Step 1: Set up tree with deisred amount of timesteps first
 
-// Step 2: Calculate upPrice and downPrice for nodes
+// Step 2: Calculate upSize and downSize (% movement up/down)
 
-const upPrice = (curPrice, stdDev, timestep) => { return curPrice * Math.exp(stdDev, Math.sqrt(timestep)) }
+const upSize = (stdDev, timestep) => { return Math.exp((stdDev * 0.01) * Math.sqrt(timestep)) };
 
-const downPrice = (upPrice) => {return 1/upPrice}
+const downSize = (upSize) => { return 1/upSize };
 
 // Step 3: Calculate option payoff at expiration (works for both curPrice=downPrice and curPrice=upPrice)
 
 const callBuyPayoff = (curPrice, strikePrice) => { return Math.max(curPrice - strikePrice, 0) }
-
 
 /*
 Function to calculate the binomial tree pricing
@@ -41,25 +40,60 @@ const calculatePrice = (steps, price, u, d, r, T) => {
   return prices;
 };
 
-
-// Modified dummy data function
-const createData = (steps, price = 100, delta = 10) => {
-  if (steps === 0) {
-    return { name: price.toFixed(2) };
-  }
-
-  return {
-    name: price.toFixed(2),
-    children: [
-      createData(steps - 1, price + delta, delta),
-      createData(steps - 1, price - delta, delta)
-    ]
-  };
-};
+let stdDev = 20.14 // SPY std dev on the year
+let stockPrice = 50 // Current stock price
+let strikePrice = 38
+let rfr = 0.03; // Risk free rate
 
 function App() {
   const [steps, setSteps] = useState(1);
-  let data = createData(steps, 100, 10);
+
+  // Modified dummy data function
+  const createData = (curSteps, price, delta = 10) => {
+    price = parseInt(price.toFixed(3))
+
+    // Size of up/down moves (returns %, stdDev whole number)
+    let upMove = upSize(stdDev, curSteps);
+    let downMove = downSize(upMove);
+
+    // At children of tree, calculate payoff
+    if (curSteps === 0) {
+      let payoff = callBuyPayoff(price, strikePrice);
+      let expectedValue = payoff * (upMove + downMove)
+      let discountedPV = expectedValue / Math.pow(1 + rfr, steps-curSteps) // THIS IS THE CALL OPTIONS VALUE
+      console.log("price:", price)
+      console.log("payoff:", payoff)
+      console.log("expected value:", expectedValue)
+      console.log("discountedPV:", discountedPV)
+      return { name: price.toFixed(2) };
+    }
+
+    // Risk neutral probabilities
+    let RNPUP = (1 + rfr - downMove) / (upMove - downMove)
+    let RNPDOWN = 1 - RNPUP
+
+    let upPrice = price * upMove
+    let downPrice = price * downMove
+
+    // console.log("curSteps:", curSteps, "upmove:", upMove, "steps:", steps)
+
+    // At expiration date, calculate payoff
+    if (curSteps == steps) { 
+      // console.log("upMove:", upMove, "downMove:", downMove);
+      // console.log("RNPUP:", RNPUP, "RNPDOWN:", RNPDOWN)
+      // console.log("upPrice:", upPrice, "downPrice:", downPrice)
+    }
+
+    return {
+      name: price.toFixed(2),
+      children: [
+        createData(curSteps - 1, upPrice, delta),
+        createData(curSteps - 1, downPrice, delta)
+      ]
+    };
+  };
+
+  let data = createData(steps, stockPrice, 10);
 
   return (
     <div className="App">
@@ -76,7 +110,7 @@ function App() {
         width={500 + 580 * (steps/5)} // normalize so width is based on steps while ensuring steps is in range from 0-1
         animated
         svgProps={{
-            className: 'tree',
+            className: 'tree'
         }}
         textProps={{ 
             style: {
