@@ -1,99 +1,103 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {Tree} from 'react-tree-graph';
 import 'react-tree-graph/dist/style.css'
 import './App.css';
 
-// Step 1: Set up tree with deisred amount of timesteps first
+function round(value, decimals) {
+  return Number(Math.round(value+'e'+decimals)+'e-'+decimals);
+}
 
 // Step 2: Calculate upSize and downSize (% movement up/down)
 
-const upSize = (stdDev, timestep) => { return Math.exp((stdDev * 0.01) * Math.sqrt(timestep)) };
+const upSize = (stdDev, deltaT) => { return Math.exp((stdDev * 0.01) * Math.sqrt(deltaT)) };
 
-const downSize = (upSize) => { return 1/upSize };
+const downSize = (stdDev, deltaT) => { return 1.0/(Math.exp((stdDev * 0.01) * Math.sqrt(deltaT))) };
 
 // Step 3: Calculate option payoff at expiration (works for both curPrice=downPrice and curPrice=upPrice)
 
 const callBuyPayoff = (curPrice, strikePrice) => { return Math.max(curPrice - strikePrice, 0) }
 
-/*
-Function to calculate the binomial tree pricing
+const putBuyPayoff = (curPrice, strikePrice) => { return Math.max(strikePrice - curPrice, 0) }
 
-u and d are the up and down factors, which represent the multiplicative increases or decreases in the stock price at each step.
-r is the risk-free interest rate.
-T is the time to expiration of the option, in years.
-p is the risk-neutral probability, which is used to calculate the expected value of the option.
-*/
-const calculatePrice = (steps, price, u, d, r, T) => {
-  // Calculate the risk-neutral probability
-  let p = (Math.exp(r * T) - d) / (u - d);
-
-  // Create an empty array to hold the prices at each node
-  let prices = Array(steps + 1).fill().map(() => Array(steps + 1));
-
-  // Calculate the prices at each node
-  for (let i = 0; i <= steps; i++) {
-    for (let j = 0; j <= i; j++) {
-      prices[j][i] = price * Math.pow(u, i - j) * Math.pow(d, j);
-    }
-  }
-
-  return prices;
-};
-
-let stdDev = 20.14 // SPY std dev on the year
-let stockPrice = 50 // Current stock price
-let strikePrice = 38
-let rfr = 0.03; // Risk free rate
+let stdDev = 19 // SPY std dev for past 3 years
+let stockPrice = 100
+let strikePrice = 100
+let rfr = 0.0375; // Risk free rate
+let totalTime = 1; // 1.5 years
 
 function App() {
+
   const [steps, setSteps] = useState(1);
+  const [deltaT, setDeltaT] =  useState(steps / steps);
+  const [upMove, setUpMove] = useState(() => upSize(stdDev, deltaT));
+  const [downMove, setDownMove] = useState(() => downSize(stdDev, deltaT));
+  const [riskNeutralProbability, setRiskNeutralProbability] = useState(0);
+
+  useEffect(() => {
+    let RNPUP = (Math.exp(rfr * deltaT) - downMove) / (upMove - downMove)
+    setRiskNeutralProbability(round(RNPUP, 4));
+  }, [downMove, upMove, deltaT])
+
+  const updateTimeStep = (timeSteps) => {
+    setSteps(timeSteps) // Number of steps in total time
+    let newDeltaT = timeSteps / timeSteps;
+    setDeltaT(newDeltaT) // Amount of time between each step (totalTime / timeSteps)
+    // EX: If total time was 5 years and we had 5 steps, deltaT = 1 year
+    // Just need to figure out if we want a fixed time till expiration or just deltaT always = 1 year vs 1 month, weigh options later
+
+    // Size of up/down moves (functions return a %, stdDev whole number)
+    let newUpMove = upSize(stdDev, newDeltaT);
+    let newDownMove = downSize(stdDev, newDeltaT);
+    setUpMove(newUpMove);
+    setDownMove(newDownMove);
+
+    let RNPUP = (Math.exp(rfr * deltaT) - downMove) / (upMove - downMove)
+    setRiskNeutralProbability(round(RNPUP, 4));
+  }
 
   // Modified dummy data function
-  const createData = (curSteps, price, delta = 10) => {
-    price = parseInt(price.toFixed(3))
+  const createData = (deltaT, curSteps, price) => {
 
-    // Size of up/down moves (returns %, stdDev whole number)
-    let upMove = upSize(stdDev, curSteps);
-    let downMove = downSize(upMove);
+    let payoff = putBuyPayoff(price, strikePrice);  //callBuyPayoff(price, strikePrice);
+    
+    // For child nodes, option value is just payoff
+    let optionValue = payoff
 
     // At children of tree, calculate payoff
     if (curSteps === 0) {
-      let payoff = callBuyPayoff(price, strikePrice);
-      let expectedValue = payoff * (upMove + downMove)
-      let discountedPV = expectedValue / Math.pow(1 + rfr, steps-curSteps) // THIS IS THE CALL OPTIONS VALUE
-      console.log("price:", price)
-      console.log("payoff:", payoff)
-      console.log("expected value:", expectedValue)
-      console.log("discountedPV:", discountedPV)
-      return { name: price.toFixed(2) };
+      return { name: `${round(price, 3)} (${round(payoff, 3)})`, optionValue: optionValue };
     }
 
-    // Risk neutral probabilities
-    let RNPUP = (1 + rfr - downMove) / (upMove - downMove)
-    let RNPDOWN = 1 - RNPUP
-
+    // Price for nodes in futures where stock goes up and down
     let upPrice = price * upMove
     let downPrice = price * downMove
 
-    // console.log("curSteps:", curSteps, "upmove:", upMove, "steps:", steps)
+    // Create nodes for graph recursively
+    let upChild = createData(deltaT, curSteps - 1, upPrice);
+    let downChild = createData(deltaT, curSteps - 1, downPrice)
+    
+    // Expected value ( (probability of up * up price) + (probability of down * down price) )
+    let expectedValue = (riskNeutralProbability * upChild.optionValue) + ((1-riskNeutralProbability) * downChild.optionValue)
 
-    // At expiration date, calculate payoff
-    if (curSteps == steps) { 
-      // console.log("upMove:", upMove, "downMove:", downMove);
-      // console.log("RNPUP:", RNPUP, "RNPDOWN:", RNPDOWN)
-      // console.log("upPrice:", upPrice, "downPrice:", downPrice)
-    }
+    // Discount expected value by risk free rate
+    let discountedValue = expectedValue * Math.exp((-1) * rfr * deltaT); // THIS IS THE CALL OPTIONS VALUE
+
+    // Price if option was sold now = strike price - stock price at node
+    let earlyExercise = payoff;
+    
+    // For non-child nodes, optionValue is discounted value or price if option was sold now
+    optionValue = Math.max(earlyExercise, discountedValue)
 
     return {
-      name: price.toFixed(2),
-      children: [
-        createData(curSteps - 1, upPrice, delta),
-        createData(curSteps - 1, downPrice, delta)
-      ]
+      name: `${round(price, 3)} (${round(optionValue, 3)})`,
+      children: [upChild, downChild],
+      optionValue: optionValue
     };
   };
 
-  let data = createData(steps, stockPrice, 10);
+  let data = createData(deltaT, steps, stockPrice);
+
+  // If duplicate prices, set them to be the same node (for one of them, set parent.right = other parent.right, then delete the other extra one). Probably just going to need new graph library for this
 
   return (
     <div className="App">
@@ -101,13 +105,17 @@ function App() {
       <div>
         <label>Timesteps: </label>
         <input type="range" min="1" max="5" value={steps} 
-          className="slider" onChange={(e) => setSteps(Number(e.target.value))} />
+          className="slider" onChange={(e) => updateTimeStep(Number(e.target.value))} />
         <span>{steps}</span>
+        <p>Delta T: {deltaT}, rfr: {rfr}, riskNeutralProbability: {riskNeutralProbability} </p>
+        <p>stdDev: {stdDev}, strikePrice: {strikePrice}, stockPrice: {stockPrice} </p>
+        <p>u: {upMove}, d: {downMove} </p>
       </div>
       <Tree
+        key={steps}
         data={data}
-        height={400 + 150 * (steps/5)}
-        width={500 + 580 * (steps/5)} // normalize so width is based on steps while ensuring steps is in range from 0-1
+        height={200 + 500 * (steps/5)}
+        width={500 + 580 * (steps/5)}
         animated
         svgProps={{
             className: 'tree'
