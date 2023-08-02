@@ -1,6 +1,7 @@
 {
   "name": "quanttraderpro",
   "version": "0.1.0",
+  "homepage": "https://{Sebastian-git}.github.io/{BinomialBeacon}",
   "private": true,
   "dependencies": {
     "@alpacahq/alpaca-trade-api": "^3.0.1",
@@ -8,7 +9,11 @@
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^13.5.0",
     "axios": "^1.4.0",
+    "bootstrap": "^5.3.0",
+    "echarts": "^5.4.3",
+    "echarts-for-react": "^3.0.2",
     "react": "^18.2.0",
+    "react-bootstrap": "^2.8.0",
     "react-dom": "^18.2.0",
     "react-scripts": "5.0.1",
     "react-tree-graph": "^8.0.1",
@@ -17,6 +22,8 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d build",
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
@@ -42,6 +49,7 @@
   },
   "devDependencies": {
     "customize-cra": "^1.0.0",
+    "gh-pages": "^5.0.0",
     "react-app-rewired": "^2.2.1"
   }
 }

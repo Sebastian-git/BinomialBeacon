@@ -1,0 +1,15 @@
+{
+  "files": {
+    "main.css": "/%7BBinomialBeacon%7D/static/css/main.f51f7f2e.css",
+    "main.js": "/%7BBinomialBeacon%7D/static/js/main.b1d3b292.js",
+    "static/js/787.1887d709.chunk.js": "/%7BBinomialBeacon%7D/static/js/787.1887d709.chunk.js",
+    "index.html": "/%7BBinomialBeacon%7D/index.html",
+    "main.f51f7f2e.css.map": "/%7BBinomialBeacon%7D/static/css/main.f51f7f2e.css.map",
+    "main.b1d3b292.js.map": "/%7BBinomialBeacon%7D/static/js/main.b1d3b292.js.map",
+    "787.1887d709.chunk.js.map": "/%7BBinomialBeacon%7D/static/js/787.1887d709.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.f51f7f2e.css",
+    "static/js/main.b1d3b292.js"
+  ]
+}
