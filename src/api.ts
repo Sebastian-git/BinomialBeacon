@@ -1,48 +1,73 @@
 import axios from 'axios';
 
 interface OptionsData {
+  getDailyClosingPrices: (ticker: String) => Promise<number[]>;
   getStockPrice: (ticker: String) => Promise<Number>;
   getStrikePrice: (ticker: String) => Promise<Number>;
   getTimeToExpiration: () => Number;
   getRiskFreeRate: () => Promise<Number>;
-  getVolatility: () => Promise<Number>;
-  getSteps: () => Promise<Number>;
-  getOptionPrice: () => Promise<Number>;
+  getStandardDeviation: (ticker: String) => Promise<Number>;
 }
 
 class PolygonOptionsData implements OptionsData {
   stockData: any;
   optionData: any;
+  stockClosingData: any;
 
   constructor() {
     this.stockData = null;
     this.optionData = null;
+    this.stockClosingData = null;
+  }
+  
+  public async getDailyClosingPrices(ticker: String): Promise<number[]> {
+    let oneYearAgo = new Date();
+    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+    let from = oneYearAgo.toISOString().split('T')[0]; 
+    let to = new Date().toISOString().split('T')[0]; 
+    try {
+      const response = await axios.get(`https://api.polygon.io/v2/aggs/ticker/${ticker}/range/1/day/${from}/${to}?adjusted=true&sort=asc&limit=252&apiKey=${process.env.REACT_APP_POLYGON_API_KEY}`)
+      if (!response.data || !response.data.results) {
+        throw new Error('Invalid response data');
+      }
+      this.stockClosingData = response.data.results.map(result => result.c);
+      return this.stockClosingData;
+    } catch (error) {
+      console.error('Error fetching daily closing prices: ', error);
+    }
+    return [];
   }
 
   public async getStockPrice(ticker: String): Promise<Number> {
-    if (ticker.length !== 4) return 0;
-    if (!this.stockData)
+    if (this.stockClosingData) {
+      return this.stockClosingData[this.stockClosingData.length - 1]
+    } else {
+      console.log(`getStockPrice(${ticker}): FAILED TO FIND STOCK PRICE IN this.stockClosingData`)
       try {
-        console.log("getStockPrice call");
-        const response = await axios.get(`https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol=${ticker}&interval=5min&apikey=CC1EJTK0U40Z2M9C`)
-        if (!response.data || !response.data['Time Series (5min)']) {
+        const response = await axios.get(`https://api.polygon.io/v2/aggs/ticker/${ticker}/prev?adjusted=true&apiKey=${process.env.REACT_APP_POLYGON_API_KEY}`)
+        if (!response.data) {
           throw new Error('Invalid response data');
         }
         this.stockData = response.data;
-        const timeSeries = response.data['Time Series (5min)'];
-        const latestTimestamp = Object.keys(timeSeries).sort().pop();
-        if (latestTimestamp) {
-          const closingPrice = timeSeries[latestTimestamp]['4. close'];
-          return closingPrice;
-        }
+        return this.stockData.results[0].c;
       } catch (error) {
         console.error('Error fetching stock data: ', error);
       }
-    const timeSeries = this.stockData['Time Series (5min)'];
-    const latestTimestamp = Object.keys(timeSeries).sort().pop();
-    if (latestTimestamp) {
-      const closingPrice = timeSeries[latestTimestamp]['4. close'];
-      return closingPrice;
+    }
+  }
+
+  public async getStandardDeviation(ticker: String): Promise<Number> {
+    try {
+      let closingPrices = this.stockClosingData
+      if (closingPrices.length === 0) {
+        throw new Error('No closing prices data');
+      }
+      let mean = closingPrices.reduce((a, b) => a + b, 0) / closingPrices.length;
+      let variance = closingPrices.map(price => Math.pow(price - mean, 2)).reduce((a, b) => a + b, 0) / closingPrices.length;
+      let standardDeviation = Math.sqrt(variance);
+      return standardDeviation;
+    } catch (error) {
+      console.error('Error calculating standard deviation: ', error);
     }
     return 0;
   }
@@ -50,8 +75,7 @@ class PolygonOptionsData implements OptionsData {
   public async getStrikePrice(ticker: String): Promise<Number> {
     if (!this.optionData)
       try {
-        console.log("getStrikePrice call");
-        const response = await axios.get(`https://api.polygon.io/v3/reference/options/contracts/O:${ticker}?apiKey=kmsrYoQHhvAPTv2_Wk7GQwtwSmyk_epK`)
+        const response = await axios.get(`https://api.polygon.io/v3/reference/options/contracts/O:${ticker}?apiKey=${process.env.POLYGON_API_KEY}`)
         if (!response.data || !response.data.results) {
           throw new Error('Invalid response data');
         }
@@ -73,16 +97,7 @@ class PolygonOptionsData implements OptionsData {
     return 0;
   }
   
-
   public async getRiskFreeRate(): Promise<Number> {
-    return 0;
-  }
-
-  public async getVolatility(): Promise<Number> {
-    return 0;
-  }
-
-  public async getSteps(): Promise<Number> {
     return 0;
   }
 

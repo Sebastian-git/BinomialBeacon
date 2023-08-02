@@ -1,28 +1,160 @@
-.App {
+@import url('https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@700&display=swap');
+
+body {
+  font-family: 'Arial', sans-serif;
+  background-color: #23395d;
+  color: black;
+}
+
+#title-wrapper {
+  display: flex;
+  flex-direction: row;
+  justify-content: left;
+  margin: 0 22vw 0 4em; 
+}
+
+.title {
+  font-family: 'Roboto Slab', serif;
+  color: white;
   text-align: center;
-  font-family: Arial, sans-serif;
-  padding: 0 1%;
+  font-weight: bold;
+  margin-bottom: 0;
+}
+
+.motto {
+  font-family: 'Roboto Slab', serif;
+  color: white;
+  text-align: center;
+  font-size: 1.2em;
+  margin-left: 1em;
+  margin-bottom: 0.8em;
 }
 
 h1 {
-  color: #4caf50;
+  color: white;
+  text-align: center;
+  font-weight: bold;
+  margin: 0.2em;
 }
 
-.slider {
-  width: 200px;
+.Container {
+  background-color: #343a40;
+  border-radius: 5px;
+
+  padding: 0.2em;
+  display: flex;
+  justify-content: center;
+}
+
+#option-data {
+  display: flex;
+  flex-direction: row;
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  margin: 0 1.5em;
+}
+
+.option-data-info {
+  margin: 0.5em;
+}
+
+#stock-form-wrapper {
+  display: flex;
+  flex-direction: column;
+}
+
+#stock-input-wrapper {
+  display: flex;
+  flex-direction: row;
+}
+
+.stock-data {
   margin: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
-.tree {
-  margin: 0.5vh 0.5vw;
+.ticker-input {
+  margin: auto;
+  margin-left: 1em;
 }
 
-.node circle {
-  fill: #4caf50;
-  stroke: #4caf50;
-  stroke-width: 1px;
+.tooltip {
+  position: fixed;
+  background-color: #fff;
+  border: 1px solid #ddd;
+  padding: 10px;
+  border-radius: 4px;
+  pointer-events: none;
 }
 
-.link path {
-  stroke: #4caf50;
+#timestep-wrapper {
+  justify-content: center;
+}
+
+.fetch-stock-data-button {
+  margin: 0.2em;
+  background-color: #007bff;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  padding: 0.5em;
+  font-size: 16px;
+  border-radius: 5px;
+  transition: background-color 0.3s ease;
+}
+
+.fetch-stock-data-button:hover {
+  background-color: #0056b3;
+}
+
+#timestep-input {
+  display: flex;
+  margin: 0.2em 0;
+  flex-direction: column;
+}
+
+#option-selections-wrapper {
+  display: flex;
+
+}
+
+.option-type-wrapper {
+  margin: 1rem;
+}
+
+.Form {
+  margin: 0;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-evenly;
+  padding: 0.5em;
+}
+
+.Form-Label {
+  font-weight: bold;
+  color: white;
+}
+
+.Form-Control {
+  border: 1px solid white;
+  border-radius: 5px;
+  background-color: white;
+}
+
+.Col {
+  background-color: #e9ecef;
+  border-radius: 5px;
+  padding: 0;
+  margin: 0.5em;
+}
+
+.ReactECharts {
+  background-color: #e9ecef;
+
 }
