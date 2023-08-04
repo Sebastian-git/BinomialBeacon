@@ -33,12 +33,32 @@ class PolygonOptionsData implements OptionsData {
       this.stockClosingData = response.data.results.map(result => result.c);
       return this.stockClosingData;
     } catch (error) {
-      console.error('Error fetching daily closing prices: ', error);
+      console.error('API Error fetching daily closing prices: ', error);
+    }
+    return [];
+  }
+  
+  public async getOptionsContracts(queries: Object): Promise<number[]> {
+    let formatted_queries = Object.entries(queries)
+    .filter( ([key, value]) => value !== null && key !== null)
+    .map( ([key, value]) => `${key}=${value}`)
+    .join("&");
+    try {
+      const response = await axios.get(`https://api.polygon.io/v3/reference/options/contracts?${formatted_queries}&apiKey=${process.env.REACT_APP_POLYGON_API_KEY}`)
+      if (!response.data || !response.data.results) {
+        throw new Error('Invalid response data');
+      }
+      return response.data.results;
+    } catch (error) {
+      console.error('API Error fetching options contracts: ', error);
     }
     return [];
   }
 
   public async getStockPrice(ticker: String): Promise<Number> {
+    if (ticker.length < 1 || ticker.length > 5) {
+      console.error("API Error invalid ticker symbol");
+    }
     if (this.stockClosingData) {
       return this.stockClosingData[this.stockClosingData.length - 1]
     } else {
@@ -51,7 +71,7 @@ class PolygonOptionsData implements OptionsData {
         this.stockData = response.data;
         return this.stockData.results[0].c;
       } catch (error) {
-        console.error('Error fetching stock data: ', error);
+        console.error('API Error fetching stock data: ', error);
       }
     }
   }

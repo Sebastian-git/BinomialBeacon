@@ -34,7 +34,10 @@ function App() {
 
   const [steps, setSteps] = useState(1);
   const [stdDev, setStdDev] = useState(19);
+  const [searched, setSearched] = useState(false);
   const [stockPrice, setStockPrice] = useState(100);
+  const [stockTicker, setStockTicker] = useState('');
+  const [dataLoaded, setDataLoaded] = useState(false);
   const [optionType, setOptionType] = useState("call");
   const [deltaT, setDeltaT] =  useState(steps / steps);
   const [upMove, setUpMove] = useState(() => upSize(stdDev, deltaT));
@@ -163,7 +166,7 @@ function App() {
     });
     setNodes(graphData.nodes);
     setLinks(graphData.links);
-  }, [steps, upMove, downMove, riskNeutralProbability, optionType]); 
+  }, [steps, upMove, downMove, riskNeutralProbability, optionType, stockPrice, stdDev]);
   
 
   const getGraphOption = () => {
@@ -179,7 +182,7 @@ function App() {
           roam: true,
           label: {
             show: true,
-            color: "black",
+            color: "white",
             fontSize: 20 - Math.min(steps/2, 8),
             position: [-35, 35 - (steps)]
           },
@@ -203,19 +206,46 @@ function App() {
     updateTimeStep(steps);
   }, []); 
 
-
-  const [stockTicker, setStockTicker] = useState('');
-  const [optionTicker, setOptionTicker] = useState('');
-
   const handleStockTickerChange = (event) => {
     let newTicker = event.target.value.toUpperCase()
     setStockTicker(newTicker);
   };
 
-  const handleOptionTickerChange = (event) => {
-    let newOptionTicker = event.target.value.toUpperCase()
-    setOptionTicker(newOptionTicker);
-  };
+  const handleBoop = async () => {
+    let queries = {
+      "underlying_ticker": "MSFT",
+      "contract_type": "call",
+      "limit": 1000,
+      "sort": "expiration_date"
+    }
+    let options = await polygonOptionsData.getOptionsContracts(queries);
+    console.log(options)
+    
+    options.sort((a, b) => {
+      if (a.expiration_date > b.expiration_date) return 1;
+      if (a.expiration_date < b.expiration_date) return -1;
+      return a.strike_price - b.strike_price;
+    });
+
+    let groups = {};
+    options.forEach(option => {
+      let date = option.expiration_date;
+      if (!groups[date]) groups[date] = [];
+      groups[date].push(option);
+    });
+
+    let result = [];
+    for (let date in groups) {
+      let group = groups[date];
+      if (group.length >= 9) {
+        let middleIndex = Math.floor(group.length / 2);
+        let selectedOptions = group.slice(middleIndex - 4, middleIndex + 5);
+        selectedOptions[4].strike_price = selectedOptions.reduce((total, option) => total + option.strike_price, 0) / selectedOptions.length;
+        result = result.concat(selectedOptions);
+      }
+    }
+    console.log("res:", result)
+  }
 
   const handleButtonClick = async () => {
     await polygonOptionsData.getDailyClosingPrices(stockTicker);
@@ -223,6 +253,28 @@ function App() {
     let newStdDev = await polygonOptionsData.getStandardDeviation(stockTicker)
     setStdDev(round(newStdDev, 4))
     setStockPrice(newPrice)
+    setDataLoaded(true);
+  };
+  
+  const resetData = () => {
+    setSearched(false);
+    setStockTicker("");
+    setOptionType("call");
+    setDataLoaded(false);
+    setStockPrice(100);
+    strikePrice = 100
+    setSteps(1);
+    setStdDev(19);
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (searched) {
+      resetData();
+    } else {
+      handleButtonClick();
+      setSearched(true);
+    }
   };
 
   const handleOptionTypeChange = (event) => {
@@ -230,78 +282,72 @@ function App() {
   }
 
   return (
-    <div className="App">
-    <div id="title-wrapper">
-      <h1 className="title">Binomial Beacon</h1>
-      <h2 className="motto">Lighting the way in options pricing</h2>
-    </div>
-      <div className="Container">
-        <div className="Row">
-          <div className="Col mb-3">
-            <div className="Form">
-              <div id="option-data">
-
-                <div className="column">
-                  <p className="option-data-info">Risk Neutral Probability: {riskNeutralProbability}</p>
-                  <p className="option-data-info">Risk Free Rate: {rfr}</p>
-                  <p className="option-data-info">
-                    &#916;T = {deltaT}
-                  </p>
-                </div>
-                <div className="column">
-                  <p className="option-data-info">Strike Price = {strikePrice} </p>
-                  <p className="option-data-info">Stock Price = {stockPrice} </p>
-                  <p className="option-data-info">
-                    &#963; = {stdDev}
-                  </p>
-                </div>
-
-              </div>
-
-              <div id="stock-form-wrapper">
-                
-                <div id="stock-input-wrapper">
-                  <div className="stock-data">
-                    <p>Stock Ticker:</p>
-                    <p>Option Ticker:</p>
-                  </div>
-
-                  <div className="stock-data">
-                    <input className="ticker-input" type="text" value={stockTicker} onChange={handleStockTickerChange} />
-                    <input className="ticker-input" type="text" value={optionTicker} onChange={handleOptionTickerChange} />
-                  </div>
-                </div>
-
-                <button className="fetch-stock-data-button" onClick={handleButtonClick}>
-                  Fetch Data
-                </button>
-                
-              </div>
-
-              <div id="timestep-wrapper">
-                <div id="timestep-input">
-                  <p>Timesteps = {steps} </p>
-                  <input type="range" min="1" max={totalTime} value={steps}
-                    onChange={(e) => updateTimeStep(Number(e.target.value))} />
-                </div>
-                <div id="option-selections-wrapper">
-                  <div className='option-type-wrapper'>
-                    <label htmlFor="put">Put</label> <br />
-                    <input type="radio" id="put" name="optionType" value="put" onChange={handleOptionTypeChange} checked={optionType === "put"} />
-                  </div>
-                  <div className='option-type-wrapper'>
-                    <label htmlFor="call">Call</label> <br />
-                    <input type="radio" id="call" name="optionType" value="call" onChange={handleOptionTypeChange} checked={optionType === "call"} />
-                  </div>
-                </div>
-              </div>
-
+    <div className="app-wrapper">
+      <div className="navbar">
+        <p className="title" onClick={resetData}>Binomial Beacon</p>
+        <p className="motto">Lighting the way in options pricing</p>
+      </div>
+  
+      <div className="chart-wrapper">
+        {dataLoaded && (
+          <div id="stats-wrapper">
+          <div className="stats-item">
+            <label className="stats-name">Stock Ticker</label>
+            <p className="stats-value">{stockTicker}</p>
+          </div>
+            <div className="stats-item">
+              <label className="stats-name">Stock Price</label>
+              <p className="stats-value">{stockPrice}</p>
+            </div>
+      
+            <div className="stats-item">
+              <label className="stats-name">Strike Price</label>
+              <p className="stats-value">{strikePrice}</p>
+            </div>
+      
+            <div className="stats-item">
+              <label className="stats-name">Standard Deviation</label>
+              <p className="stats-value">{stdDev}</p>
             </div>
           </div>
-          <div className="Col">
-            <ReactECharts className="ReactECharts" option={getGraphOption()} style={{height: '69vh', width: '90vw', margin: "auto"}}/>
+        )}
+        <ReactECharts className="react-echarts" option={getGraphOption()} style={{height: '70vh', width: '90vw', margin: "auto"}}/>
+      </div>
+
+      <div>
+        <form onSubmit={handleSubmit} className="form-wrapper">
+          {!searched && (
+            <>
+          <div className="form-item">
+            <label htmlFor="stock-ticker" className="form-name">Stock ticker</label>
+            <input id="stock-ticker-input" type="text" value={stockTicker} onChange={handleStockTickerChange} />
           </div>
-        </div>
+            <div className="form-item">
+              <label className="form-name">Option Type</label>
+              <div id="option-type-wrapper">
+                <div className="option-type-item">
+                  <label htmlFor="put">Put</label>
+                  <input type="radio" id="put" name="optionType" value="put" onChange={handleOptionTypeChange} checked={optionType === "put"} />
+                </div>
+                <div className="option-type-item">
+                  <label htmlFor="call">Call</label>
+                  <input type="radio" id="call" name="optionType" value="call" onChange={handleOptionTypeChange} checked={optionType === "call"} />
+                </div>
+              </div>
+            </div>
+            </>
+          )}
+          {dataLoaded && (
+            <div id="timestep-control-input">
+              <p>Timesteps = {steps} </p>
+              <input type="range" min="1" max={totalTime} value={steps}
+                onChange={(e) => updateTimeStep(Number(e.target.value))} />
+            </div>
+          )}
+          <div className="form-item">
+            <button className="btn-search" type="submit">{searched ? 'Reset' : 'Search'}</button>
+          </div>
+        </form>
       </div>
     </div>
   );
