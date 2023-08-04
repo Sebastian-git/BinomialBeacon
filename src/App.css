@@ -24,6 +24,12 @@ body {
   font-size: 1.2em;
 }
 
+.github-icon {
+  color: white; /* sets the color of the icon */
+  position: absolute; /* positions the icon relative to the navbar */
+  right: 2vw; /* offsets the icon 20px from the right side of the navbar */
+}
+
 #stats-wrapper {
   display: flex;
   color: white;

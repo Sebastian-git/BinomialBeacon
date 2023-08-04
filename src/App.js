@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import './App.css';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faGithub } from '@fortawesome/free-brands-svg-icons'
 import ReactECharts from 'echarts-for-react';
 import PolygonOptionsData from './api.ts'
+import './App.css';
 
 function round(value, decimals) {
   return Number(Math.round(value+'e'+decimals)+'e-'+decimals);
@@ -286,6 +288,9 @@ function App() {
       <div className="navbar">
         <p className="title" onClick={resetData}>Binomial Beacon</p>
         <p className="motto">Lighting the way in options pricing</p>
+        <a href="https://github.com/Sebastian-git/BinomialBeacon" target="_blank" rel="noopener noreferrer" className="github-icon">
+          <FontAwesomeIcon icon={faGithub} size="2x" />
+        </a>
       </div>
   
       <div className="chart-wrapper">
