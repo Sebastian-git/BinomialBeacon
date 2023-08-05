@@ -18,7 +18,7 @@ jobs:
     - name: Install dependencies and build
       run: |
         npm install
-        npm run-script build
+        CI=false npm run-script build
       env:
         REACT_APP_POLYGON_API_KEY: ${{ secrets.REACT_APP_POLYGON_API_KEY }}
 

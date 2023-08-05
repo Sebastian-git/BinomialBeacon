@@ -25,6 +25,7 @@ let rfr = 0.0375;
 let totalTime = 20;
 
 let id = 0;
+console.log(id);
 let map = {};
 let siblings = {}
 let children = {}
@@ -74,10 +75,10 @@ function App() {
 
   const createGraphData = (deltaT, curSteps, price, id = 0, parentId = null, optionType) => {
     let payoff;
-    if (optionType == "call") {
+    if (optionType === "call") {
       payoff = callBuyPayoff(price, strikePrice);
     }
-    else if (optionType == "put") {
+    else if (optionType === "put") {
       payoff = putBuyPayoff(price, strikePrice);
     }
     
@@ -214,41 +215,41 @@ function App() {
     setStockTicker(newTicker);
   };
 
-  const handleBoop = async () => {
-    let queries = {
-      "underlying_ticker": "MSFT",
-      "contract_type": "call",
-      "limit": 1000,
-      "sort": "expiration_date"
-    }
-    let options = await polygonOptionsData.getOptionsContracts(queries);
-    console.log(options)
+  // const handleBoop = async () => {
+  //   let queries = {
+  //     "underlying_ticker": "MSFT",
+  //     "contract_type": "call",
+  //     "limit": 1000,
+  //     "sort": "expiration_date"
+  //   }
+  //   let options = await polygonOptionsData.getOptionsContracts(queries);
+  //   console.log(options)
     
-    options.sort((a, b) => {
-      if (a.expiration_date > b.expiration_date) return 1;
-      if (a.expiration_date < b.expiration_date) return -1;
-      return a.strike_price - b.strike_price;
-    });
+  //   options.sort((a, b) => {
+  //     if (a.expiration_date > b.expiration_date) return 1;
+  //     if (a.expiration_date < b.expiration_date) return -1;
+  //     return a.strike_price - b.strike_price;
+  //   });
 
-    let groups = {};
-    options.forEach(option => {
-      let date = option.expiration_date;
-      if (!groups[date]) groups[date] = [];
-      groups[date].push(option);
-    });
+  //   let groups = {};
+  //   options.forEach(option => {
+  //     let date = option.expiration_date;
+  //     if (!groups[date]) groups[date] = [];
+  //     groups[date].push(option);
+  //   });
 
-    let result = [];
-    for (let date in groups) {
-      let group = groups[date];
-      if (group.length >= 9) {
-        let middleIndex = Math.floor(group.length / 2);
-        let selectedOptions = group.slice(middleIndex - 4, middleIndex + 5);
-        selectedOptions[4].strike_price = selectedOptions.reduce((total, option) => total + option.strike_price, 0) / selectedOptions.length;
-        result = result.concat(selectedOptions);
-      }
-    }
-    console.log("res:", result)
-  }
+  //   let result = [];
+  //   for (let date in groups) {
+  //     let group = groups[date];
+  //     if (group.length >= 9) {
+  //       let middleIndex = Math.floor(group.length / 2);
+  //       let selectedOptions = group.slice(middleIndex - 4, middleIndex + 5);
+  //       selectedOptions[4].strike_price = selectedOptions.reduce((total, option) => total + option.strike_price, 0) / selectedOptions.length;
+  //       result = result.concat(selectedOptions);
+  //     }
+  //   }
+  //   console.log("res:", result)
+  // }
 
   const handleButtonClick = async () => {
     await polygonOptionsData.getDailyClosingPrices(stockTicker);
