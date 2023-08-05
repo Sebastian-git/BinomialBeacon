@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faGithub } from '@fortawesome/free-brands-svg-icons'
+import { faArrowsToEye } from '@fortawesome/free-solid-svg-icons';
 import ReactECharts from 'echarts-for-react';
 import PolygonOptionsData from './api.ts'
 import './App.css';
@@ -44,9 +45,19 @@ function App() {
   const [dataLoaded, setDataLoaded] = useState(false);
   const [optionType, setOptionType] = useState("call");
   const [deltaT, setDeltaT] =  useState(steps / steps);
+  const [centerGraphTooltip, setCenterGraphTooltip] = useState(false);
   const [upMove, setUpMove] = useState(() => upSize(stdDev, deltaT));
   const [downMove, setDownMove] = useState(() => downSize(stdDev, deltaT));
   const [riskNeutralProbability, setRiskNeutralProbability] = useState(0);
+
+  const [resetCount, setResetCount] = useState(0);
+  const echartRef = useRef(null);
+  useEffect(() => {
+    const chartInstance = echartRef.current.getEchartsInstance();
+    chartInstance.clear(); 
+    chartInstance.setOption(getGraphOption());
+  }, [resetCount]);
+
   
   useEffect(() => {
     let RNP = getRNP(rfr, deltaT, downMove, upMove)
@@ -318,7 +329,12 @@ function App() {
             </div>
           </div>
         )}
-        <ReactECharts className="react-echarts" option={getGraphOption()} style={{height: '70vh', width: '90vw', margin: "auto"}}/>
+        <ReactECharts ref={echartRef} className="react-echarts" option={getGraphOption()} style={{height: '65vh', width: '90vw', margin: "auto"}}/>
+        
+        <button id="refresh-graph-button" onClick={() => setResetCount(resetCount + 1)} onMouseEnter={() => setCenterGraphTooltip(true)} onMouseLeave={() => setCenterGraphTooltip(false)} >
+          {centerGraphTooltip && <div id="refresh-graph-tooltip">Re-center graph</div>}
+          <FontAwesomeIcon id="refresh-graph-icon" icon={faArrowsToEye} />
+        </button>
       </div>
 
       <div>

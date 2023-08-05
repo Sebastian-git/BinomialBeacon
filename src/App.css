@@ -58,9 +58,42 @@ body {
   border-radius: 15px;
 }
 
+#refresh-graph-button {
+  margin-bottom: -4vh;
+  margin-left: 2vw;
+  background-color: black;
+  color: white;
+  border: none;
+  cursor: pointer;
+  padding: 1vh 1vw;
+}
+
+#refresh-graph-icon {
+  height: 3vh;
+}
+
+#refresh-graph-tooltip {
+  position: absolute;
+  background-color: #fff;
+  color: #000;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 1em;
+  transition: opacity 0.1s;
+  opacity: 0;
+  animation: fadeIn 0.1s forwards;
+  margin-left: -3vw;
+  margin-top: -4.8vh;
+}
+
+@keyframes fadeIn {
+  to {
+    opacity: 1;
+  }
+}
+
 .form-wrapper {
   display: flex;
-
   flex-wrap: wrap;
   justify-content: space-around;
   align-items: stretch;
