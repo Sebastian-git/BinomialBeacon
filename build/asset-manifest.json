@@ -1,15 +1,15 @@
 {
   "files": {
     "main.css": "/BinomialBeacon/static/css/main.df10a24b.css",
-    "main.js": "/BinomialBeacon/static/js/main.49bedb84.js",
+    "main.js": "/BinomialBeacon/static/js/main.207eb4e7.js",
     "static/js/787.1887d709.chunk.js": "/BinomialBeacon/static/js/787.1887d709.chunk.js",
     "index.html": "/BinomialBeacon/index.html",
     "main.df10a24b.css.map": "/BinomialBeacon/static/css/main.df10a24b.css.map",
-    "main.49bedb84.js.map": "/BinomialBeacon/static/js/main.49bedb84.js.map",
+    "main.207eb4e7.js.map": "/BinomialBeacon/static/js/main.207eb4e7.js.map",
     "787.1887d709.chunk.js.map": "/BinomialBeacon/static/js/787.1887d709.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.df10a24b.css",
-    "static/js/main.49bedb84.js"
+    "static/js/main.207eb4e7.js"
   ]
 }
