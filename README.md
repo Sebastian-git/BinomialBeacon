@@ -7,6 +7,7 @@ Topics to mention in README:
 - Binomial Option Pricing Model (Finance)
 - React echarts (React)
 - Options Data API (Polygon API) (Touchscript)
+- Wireframes (time spent designing)
 - Rust (new language, learning about benefits)
 - Web Assembly (difficult adding Rust to existing project)
 - Deployment (1st time using Github pages, learned about Actions & Workflows to use .env)
