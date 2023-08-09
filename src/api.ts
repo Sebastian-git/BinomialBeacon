@@ -1,12 +1,12 @@
 import axios from 'axios';
 
 interface OptionsData {
-  getDailyClosingPrices: (ticker: String) => Promise<number[]>;
-  getStockPrice: (ticker: String) => Promise<Number>;
-  getStrikePrice: (ticker: String) => Promise<Number>;
-  getTimeToExpiration: () => Number;
-  getRiskFreeRate: () => Promise<Number>;
-  getStandardDeviation: (ticker: String) => Promise<Number>;
+  getDailyClosingPrices: (ticker: string) => Promise<number[]>;
+  getStockPrice: (ticker: string) => Promise<number>;
+  getStrikePrice: (ticker: string) => Promise<number>;
+  getTimeToExpiration: () => number;
+  getRiskFreeRate: () => Promise<number>;
+  getStandardDeviation: (ticker: string) => Promise<number>;
 }
 
 class PolygonOptionsData implements OptionsData {
@@ -20,7 +20,7 @@ class PolygonOptionsData implements OptionsData {
     this.stockClosingData = null;
   }
   
-  public async getDailyClosingPrices(ticker: String): Promise<number[]> {
+  public async getDailyClosingPrices(ticker: string): Promise<number[]> {
     let oneYearAgo = new Date();
     oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
     let from = oneYearAgo.toISOString().split('T')[0]; 
@@ -30,7 +30,7 @@ class PolygonOptionsData implements OptionsData {
       if (!response.data || !response.data.results) {
         throw new Error('Invalid response data');
       }
-      this.stockClosingData = response.data.results.map(result => result.c);
+      this.stockClosingData = response.data.results.map((result: { c: any; }) => result.c);
       return this.stockClosingData;
     } catch (error) {
       console.error('API Error fetching daily closing prices: ', error);
@@ -38,7 +38,7 @@ class PolygonOptionsData implements OptionsData {
     return [];
   }
   
-  public async getOptionsContracts(queries: Object): Promise<number[]> {
+  public async getOptionsContracts(queries: {[key: string]: any}): Promise<number[]> {
     let formatted_queries = Object.entries(queries)
     .filter( ([key, value]) => value !== null && key !== null)
     .map( ([key, value]) => `${key}=${value}`)
@@ -55,7 +55,7 @@ class PolygonOptionsData implements OptionsData {
     return [];
   }
 
-  public async getStockPrice(ticker: String): Promise<Number> {
+  public async getStockPrice(ticker: string): Promise<number> {
     if (ticker.length < 1 || ticker.length > 5) {
       console.error("API Error invalid ticker symbol");
     }
@@ -74,16 +74,17 @@ class PolygonOptionsData implements OptionsData {
         console.error('API Error fetching stock data: ', error);
       }
     }
+    return 0;
   }
 
-  public async getStandardDeviation(ticker: String): Promise<Number> {
+  public async getStandardDeviation(ticker: string): Promise<number> {
     try {
       let closingPrices = this.stockClosingData
       if (closingPrices.length === 0) {
         throw new Error('No closing prices data');
       }
-      let mean = closingPrices.reduce((a, b) => a + b, 0) / closingPrices.length;
-      let variance = closingPrices.map(price => Math.pow(price - mean, 2)).reduce((a, b) => a + b, 0) / closingPrices.length;
+      let mean = closingPrices.reduce((a: number, b: number) => a + b, 0) / closingPrices.length;
+      let variance = closingPrices.map((price: number) => Math.pow(price - mean, 2)).reduce((a: number, b: number) => a + b, 0) / closingPrices.length;
       let standardDeviation = Math.sqrt(variance);
       return standardDeviation;
     } catch (error) {
@@ -92,7 +93,7 @@ class PolygonOptionsData implements OptionsData {
     return 0;
   }
 
-  public async getStrikePrice(ticker: String): Promise<Number> {
+  public async getStrikePrice(ticker: string): Promise<number> {
     if (!this.optionData)
       try {
         const response = await axios.get(`https://api.polygon.io/v3/reference/options/contracts/O:${ticker}?apiKey=${process.env.POLYGON_API_KEY}`)
@@ -107,7 +108,7 @@ class PolygonOptionsData implements OptionsData {
     return this.optionData.results.strike_price;;
   }
   
-  public getTimeToExpiration(): Number {
+  public getTimeToExpiration(): number {
     if (this.optionData) {
       const expDate = new Date(this.optionData.results.expiration_date);
       const today = new Date();
@@ -117,11 +118,11 @@ class PolygonOptionsData implements OptionsData {
     return 0;
   }
   
-  public async getRiskFreeRate(): Promise<Number> {
+  public async getRiskFreeRate(): Promise<number> {
     return 0;
   }
 
-  public async getOptionPrice(): Promise<Number> {
+  public async getOptionPrice(): Promise<number> {
     return 0;
   }
 

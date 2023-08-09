@@ -1,32 +1,21 @@
-import React, { useEffect, useState, useRef } from 'react';
+import { up_size, down_size, call_buy_payoff, put_buy_payoff, get_rnp } from "../build/binomialbeacon";
+import { faArrowsToEye } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faGithub } from '@fortawesome/free-brands-svg-icons'
-import { faArrowsToEye } from '@fortawesome/free-solid-svg-icons';
+import React, { useEffect, useState, useRef } from 'react';
 import ReactECharts from 'echarts-for-react';
 import PolygonOptionsData from './api.ts'
 import './App.css';
 
-
 function round(value, decimals) {
   return Number(Math.round(value+'e'+decimals)+'e-'+decimals);
 }
-
-const upSize = (stdDev, deltaT) => { return Math.exp((stdDev * 0.01) * Math.sqrt(deltaT)) };
-
-const downSize = (stdDev, deltaT) => { return 1.0/(Math.exp((stdDev * 0.01) * Math.sqrt(deltaT))) };
-
-const callBuyPayoff = (curPrice, strikePrice) => { return Math.max(curPrice - strikePrice, 0) };
-
-const putBuyPayoff = (curPrice, strikePrice) => { return Math.max(strikePrice - curPrice, 0) };
-
-const getRNP = (rfr, deltaT, downMove, upMove) => { return (Math.exp(rfr * deltaT) - downMove) / (upMove - downMove) };
 
 let strikePrice = 100
 let rfr = 0.0375; 
 let totalTime = 20;
 
 let id = 0;
-console.log(id);
 let map = {};
 let siblings = {}
 let children = {}
@@ -46,8 +35,8 @@ function App() {
   const [optionType, setOptionType] = useState("call");
   const [deltaT, setDeltaT] =  useState(steps / steps);
   const [centerGraphTooltip, setCenterGraphTooltip] = useState(false);
-  const [upMove, setUpMove] = useState(() => upSize(stdDev, deltaT));
-  const [downMove, setDownMove] = useState(() => downSize(stdDev, deltaT));
+  const [upMove, setUpMove] = useState(() => up_size(stdDev, deltaT));
+  const [downMove, setDownMove] = useState(() => down_size(stdDev, deltaT));
   const [riskNeutralProbability, setRiskNeutralProbability] = useState(0);
 
   const [resetCount, setResetCount] = useState(0);
@@ -60,7 +49,7 @@ function App() {
 
   
   useEffect(() => {
-    let RNP = getRNP(rfr, deltaT, downMove, upMove)
+    let RNP = get_rnp(rfr, deltaT, downMove, upMove)
     setRiskNeutralProbability(round(RNP, 4));
   }, [downMove, upMove, deltaT])
 
@@ -75,22 +64,22 @@ function App() {
     // Just need to figure out if we want a fixed time till expiration or just deltaT always = 1 year vs 1 month, weigh options later
 
     // Size of up/down moves (functions return a %, stdDev whole number)
-    let newUpMove = upSize(stdDev, newDeltaT);
-    let newDownMove = downSize(stdDev, newDeltaT);
+    let newUpMove = up_size(stdDev, newDeltaT);
+    let newDownMove = down_size(stdDev, newDeltaT);
     setUpMove(newUpMove);
     setDownMove(newDownMove);
 
-    let RNP = getRNP(rfr, deltaT, downMove, upMove)
+    let RNP = get_rnp(rfr, deltaT, downMove, upMove)
     setRiskNeutralProbability(round(RNP, 4));
   }
 
   const createGraphData = (deltaT, curSteps, price, id = 0, parentId = null, optionType) => {
     let payoff;
     if (optionType === "call") {
-      payoff = callBuyPayoff(price, strikePrice);
+      payoff = call_buy_payoff(price, strikePrice);
     }
     else if (optionType === "put") {
-      payoff = putBuyPayoff(price, strikePrice);
+      payoff = put_buy_payoff(price, strikePrice);
     }
     
     let x = (steps - curSteps) * 100 * steps;
@@ -226,41 +215,63 @@ function App() {
     setStockTicker(newTicker);
   };
 
-  // const handleBoop = async () => {
-  //   let queries = {
-  //     "underlying_ticker": "MSFT",
-  //     "contract_type": "call",
-  //     "limit": 1000,
-  //     "sort": "expiration_date"
-  //   }
-  //   let options = await polygonOptionsData.getOptionsContracts(queries);
-  //   console.log(options)
+  const handleBoop = async () => {
+    let queries = {
+      "underlying_ticker": "MSFT",
+      "contract_type": "call",
+      "limit": 1000,
+      "sort": "expiration_date"
+    }
+    let options = await polygonOptionsData.getOptionsContracts(queries);
+    let res = options;
+    console.log("options:", options)
+    // Calculate average
+    let curDate = 0, curSum = 0, curTotal;
+    let dataPoints = [], localPoints = [];
+    let averages = []; // [date1_avg, date2_avg, ...]
+    res.forEach((contract_object) => {
+      if (contract_object.expiration_date != curDate) {
+        averages.push(curSum/curTotal);
+        dataPoints.push(localPoints);
+        curTotal = 0;
+        curSum = 0;
+        curDate = contract_object.expiration_date;
+      }
+      localPoints.push(
+        { "expiration_date": contract_object.expiration_date, 
+          "strike_price": contract_object.strike_price } );
+      curSum += contract_object.strike_price
+      curTotal += 1
+    });
+    console.log("averages:", averages);
+    console.log("datapoints:", dataPoints)
+    return
     
-  //   options.sort((a, b) => {
-  //     if (a.expiration_date > b.expiration_date) return 1;
-  //     if (a.expiration_date < b.expiration_date) return -1;
-  //     return a.strike_price - b.strike_price;
-  //   });
+    options.sort((a, b) => {
+      if (a.expiration_date > b.expiration_date) return 1;
+      if (a.expiration_date < b.expiration_date) return -1;
+      return a.strike_price - b.strike_price;
+    });
 
-  //   let groups = {};
-  //   options.forEach(option => {
-  //     let date = option.expiration_date;
-  //     if (!groups[date]) groups[date] = [];
-  //     groups[date].push(option);
-  //   });
+    let groups = {};
+    options.forEach(option => {
+      let date = option.expiration_date;
+      if (!groups[date]) groups[date] = [];
+      groups[date].push(option);
+    });
 
-  //   let result = [];
-  //   for (let date in groups) {
-  //     let group = groups[date];
-  //     if (group.length >= 9) {
-  //       let middleIndex = Math.floor(group.length / 2);
-  //       let selectedOptions = group.slice(middleIndex - 4, middleIndex + 5);
-  //       selectedOptions[4].strike_price = selectedOptions.reduce((total, option) => total + option.strike_price, 0) / selectedOptions.length;
-  //       result = result.concat(selectedOptions);
-  //     }
-  //   }
-  //   console.log("res:", result)
-  // }
+    let result = [];
+    for (let date in groups) {
+      let group = groups[date];
+      if (group.length >= 9) {
+        let middleIndex = Math.floor(group.length / 2);
+        let selectedOptions = group.slice(middleIndex - 4, middleIndex + 5);
+        selectedOptions[4].strike_price = selectedOptions.reduce((total, option) => total + option.strike_price, 0) / selectedOptions.length;
+        result = result.concat(selectedOptions);
+      }
+    }
+    console.log("res:", result)
+  }
 
   const handleButtonClick = async () => {
     await polygonOptionsData.getDailyClosingPrices(stockTicker);
