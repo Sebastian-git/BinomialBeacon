@@ -38,16 +38,17 @@
     "binomial-beacon-v3": "file:../pkg",
     "echarts-for-react": "^3.0.2",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.14.2"
   },
   "devDependencies": {
     "@babel/preset-env": "^7.22.10",
     "@babel/preset-react": "^7.22.5",
+    "babel-loader": "^9.1.3",
     "copy-webpack-plugin": "^5.0.0",
+    "css-loader": "^6.8.1",
     "dotenv-webpack": "^8.0.1",
     "hello-wasm-pack": "^0.1.0",
-    "babel-loader": "^9.1.3",
-    "css-loader": "^6.8.1",
     "style-loader": "^3.3.3",
     "ts-loader": "^9.4.4",
     "typescript": "^5.1.6",
