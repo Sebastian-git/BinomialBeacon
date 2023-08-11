@@ -21,7 +21,6 @@ const putBuyPayoff = (curPrice, strikePrice) => { return Math.max(strikePrice - 
 
 const getRNP = (rfr, deltaT, downMove, upMove) => { return (Math.exp(rfr * deltaT) - downMove) / (upMove - downMove) };
 
-let strikePrice = 100
 let rfr = 0.0375; 
 let totalTime = 20;
 
@@ -36,7 +35,7 @@ const polygonOptionsData = new PolygonOptionsData();
 
 function App() {
   return (
-    <Router>
+    <Router basename={process.env.PUBLIC_URL}>
       <MainApp />
     </Router>
   );

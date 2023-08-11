@@ -1,17 +1,9 @@
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faGithub } from '@fortawesome/free-brands-svg-icons';
-import { useNavigate, useLocation } from 'react-router-dom';
-import React, { useState, useEffect } from 'react';
-import Navbar from './Navbar';
+import { useNavigate } from 'react-router-dom';
+import React from 'react';
 import './OptionsDisplay.css';
 
 function OptionsDisplay({optionsContracts, setSelectedOption}) {
     let navigate = useNavigate();
-    const location = useLocation();
-    const [key, setKey] = useState(0);
-    useEffect(() => {
-        setKey(prevKey => prevKey + 1);
-    }, [optionsContracts]);
     
     return (
         <div>
