@@ -1,11 +1,11 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faGithub } from '@fortawesome/free-brands-svg-icons'
+import { BrowserRouter as Router, Route, Routes, useNavigate, useLocation } from 'react-router-dom';import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faArrowsToEye } from '@fortawesome/free-solid-svg-icons';
+import React, { useEffect, useState, useRef } from 'react';
+import OptionsDisplay from './OptionsDisplay';
 import ReactECharts from 'echarts-for-react';
-import PolygonOptionsData from './api.ts'
+import PolygonOptionsData from './api.ts';
+import Navbar from './Navbar';
 import './App.css';
-
 
 function round(value, decimals) {
   return Number(Math.round(value+'e'+decimals)+'e-'+decimals);
@@ -26,7 +26,6 @@ let rfr = 0.0375;
 let totalTime = 20;
 
 let id = 0;
-console.log(id);
 let map = {};
 let siblings = {}
 let children = {}
@@ -36,22 +35,117 @@ let missing = []
 const polygonOptionsData = new PolygonOptionsData();
 
 function App() {
+  return (
+    <Router>
+      <MainApp />
+    </Router>
+  );
+}
 
-  const [steps, setSteps] = useState(1);
-  const [stdDev, setStdDev] = useState(19);
+
+function MainApp() {
+  const savedOptionsContracts = JSON.parse(localStorage.getItem('optionsContracts') || '[]');
+  const savedStockTicker = localStorage.getItem('stockTicker') || '';
+  
+  const [stockTicker, setStockTicker] = useState(savedStockTicker);
+  const [optionsContracts, setOptionsContracts] = useState(savedOptionsContracts);
+  const [selectedOption, setSelectedOption] = useState(null);
   const [searched, setSearched] = useState(false);
   const [stockPrice, setStockPrice] = useState(100);
-  const [stockTicker, setStockTicker] = useState('');
-  const [dataLoaded, setDataLoaded] = useState(false);
+  const [strikePrice, setStrikePrice] = useState(100);
   const [optionType, setOptionType] = useState("call");
+  const [dataLoaded, setDataLoaded] = useState(false);
+  const [stdDev, setStdDev] = useState(19);
+  
+  const resetData = () => {
+    setSearched(false);
+    setStockTicker("");
+    setOptionType("call");
+    setDataLoaded(false);
+    setStockPrice(100);
+    setStrikePrice(100);
+    setStdDev(19);
+    localStorage.removeItem("optionsContracts");
+    localStorage.removeItem("stockTicker");
+  };
+
+  useEffect(() => {
+    localStorage.setItem('optionsContracts', JSON.stringify(optionsContracts));
+    localStorage.setItem('stockTicker', stockTicker);
+  }, [optionsContracts, stockTicker]);
+
+  return (
+    <>
+      <Navbar resetData={resetData} /> 
+      <Routes>
+        <Route path="/" element={<Dashboard 
+          optionsContracts={optionsContracts} 
+          setOptionsContracts={setOptionsContracts} 
+          selectedOption={selectedOption} 
+          setSelectedOption={setSelectedOption} 
+          stockTicker={stockTicker} 
+          setStockTicker={setStockTicker} 
+          searched={searched} 
+          setSearched={setSearched} 
+          stockPrice={stockPrice} 
+          setStockPrice={setStockPrice} 
+          strikePrice={strikePrice} 
+          setStrikePrice={setStrikePrice}
+          resetData={resetData}
+          optionType={optionType}
+          setOptionType={setOptionType}
+          dataLoaded={dataLoaded}
+          setDataLoaded={setDataLoaded}
+          stdDev={stdDev}
+          setStdDev={setStdDev}
+        />} />
+        <Route path="/optionsDisplay" element={<OptionsDisplay optionsContracts={optionsContracts} setSelectedOption={setSelectedOption} />} />
+      </Routes>
+    </>
+  );
+}
+
+function Dashboard({
+  optionsContracts, 
+  setOptionsContracts, 
+  selectedOption, 
+  setSelectedOption, 
+  stockTicker, 
+  setStockTicker, 
+  searched, 
+  setSearched, 
+  stockPrice, 
+  setStockPrice, 
+  strikePrice, 
+  setStrikePrice,
+  resetData,
+  optionType,
+  setOptionType,
+  dataLoaded,
+  setDataLoaded,
+  stdDev,
+  setStdDev
+}) {
+
+  const [steps, setSteps] = useState(1);
   const [deltaT, setDeltaT] =  useState(steps / steps);
   const [centerGraphTooltip, setCenterGraphTooltip] = useState(false);
   const [upMove, setUpMove] = useState(() => upSize(stdDev, deltaT));
   const [downMove, setDownMove] = useState(() => downSize(stdDev, deltaT));
   const [riskNeutralProbability, setRiskNeutralProbability] = useState(0);
-
   const [resetCount, setResetCount] = useState(0);
   const echartRef = useRef(null);
+  let navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    if (selectedOption) {
+      setStrikePrice(selectedOption.strikePrice);
+      setSelectedOption(null); 
+      getStockData();
+    }
+  }, [selectedOption]);
+  
   useEffect(() => {
     const chartInstance = echartRef.current.getEchartsInstance();
     chartInstance.clear(); 
@@ -226,43 +320,84 @@ function App() {
     setStockTicker(newTicker);
   };
 
-  // const handleBoop = async () => {
-  //   let queries = {
-  //     "underlying_ticker": "MSFT",
-  //     "contract_type": "call",
-  //     "limit": 1000,
-  //     "sort": "expiration_date"
-  //   }
-  //   let options = await polygonOptionsData.getOptionsContracts(queries);
-  //   console.log(options)
-    
-  //   options.sort((a, b) => {
-  //     if (a.expiration_date > b.expiration_date) return 1;
-  //     if (a.expiration_date < b.expiration_date) return -1;
-  //     return a.strike_price - b.strike_price;
-  //   });
+  const groupContractsByExpiration = (options) => {
+    let grouped = {};
+    options.forEach(contract => {
+        if (!grouped[contract.expiration_date]) {
+            grouped[contract.expiration_date] = [];
+        }
+        grouped[contract.expiration_date].push({
+            ticker: contract.ticker,
+            expirationDate: contract.expiration_date,
+            strikePrice: contract.strike_price
+        });
+    });
+    return Object.values(grouped);
+  }
 
-  //   let groups = {};
-  //   options.forEach(option => {
-  //     let date = option.expiration_date;
-  //     if (!groups[date]) groups[date] = [];
-  //     groups[date].push(option);
-  //   });
+  function calculateAverages(groupedContracts) {
+    return groupedContracts.map(contracts => {
+        const sum = contracts.reduce((acc, contract) => acc + contract.strikePrice, 0);
+        return sum / contracts.length;
+    });
+  }
+  
+  const calculateStdDev = (groupedContracts, averageStrikePrices) => {
+    return groupedContracts.map((contracts, index) => {
+      const avg = averageStrikePrices[index];
+      const varianceSum = contracts.reduce((acc, contract) => acc + (contract.strikePrice - avg) ** 2, 0);
+      return Math.sqrt(varianceSum / contracts.length);
+    });
+  }
 
-  //   let result = [];
-  //   for (let date in groups) {
-  //     let group = groups[date];
-  //     if (group.length >= 9) {
-  //       let middleIndex = Math.floor(group.length / 2);
-  //       let selectedOptions = group.slice(middleIndex - 4, middleIndex + 5);
-  //       selectedOptions[4].strike_price = selectedOptions.reduce((total, option) => total + option.strike_price, 0) / selectedOptions.length;
-  //       result = result.concat(selectedOptions);
-  //     }
-  //   }
-  //   console.log("res:", result)
-  // }
+  const getNine = (group, stdDev) => {
+    let middle = Math.floor(group.length / 2);
+    let jumpDistance = stdDev/4;
+    let res = [group[middle]];
+    let l = middle-1, r = middle+1;
+    for(let i = 1; i <= 4 && l >= 0; i++) {
+        while(l >= 0 && group[l].strikePrice > group[middle].strikePrice - i * jumpDistance) 
+            l--;
+        if(l >= 0) 
+          res.push(group[l]);
+    }
+    for(let i = 1; i <= 4 && r < group.length; i++) {
+        while(r < group.length && group[r].strikePrice < group[middle].strikePrice + i * jumpDistance)
+            r++;
+        if(r < group.length) 
+            res.push(group[r]);
+    }
+    return res.sort((a, b) => a.strikePrice - b.strikePrice);
+  }
+  
+  const getOptionsContracts = async () => {
+    let queries = {
+      "underlying_ticker": stockTicker,
+      "contract_type": optionType,
+      "limit": 1000,
+      "sort": "expiration_date"
+    }
+    let options = await polygonOptionsData.getOptionsContracts(queries);
 
-  const handleButtonClick = async () => {
+    const groupedContracts = groupContractsByExpiration(options);
+    const averageStrikePrices = calculateAverages(groupedContracts);
+    const stdDevs = calculateStdDev(groupedContracts, averageStrikePrices);
+
+    const trimmedGroup = groupedContracts.map((group, i) => getNine(group, stdDevs[i]));
+    setOptionsContracts(trimmedGroup);
+    console.log("passing:", trimmedGroup)
+    navigate("/optionsDisplay", { state: { optionsContracts: trimmedGroup } });
+    return (
+        <Router>
+            <Routes>
+                <Route path="/" element={<MainApp />}></Route>
+                <Route path="/optionsDisplay" element={<OptionsDisplay />} />
+            </Routes>
+        </Router>
+    );
+  }
+
+  const getStockData = async () => {
     await polygonOptionsData.getDailyClosingPrices(stockTicker);
     let newPrice = await polygonOptionsData.getStockPrice(stockTicker)
     let newStdDev = await polygonOptionsData.getStandardDeviation(stockTicker)
@@ -270,25 +405,14 @@ function App() {
     setStockPrice(newPrice)
     setDataLoaded(true);
   };
-  
-  const resetData = () => {
-    setSearched(false);
-    setStockTicker("");
-    setOptionType("call");
-    setDataLoaded(false);
-    setStockPrice(100);
-    strikePrice = 100
-    setSteps(1);
-    setStdDev(19);
-  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (searched) {
       resetData();
     } else {
-      handleButtonClick();
       setSearched(true);
+      getOptionsContracts();
     }
   };
 
@@ -298,14 +422,6 @@ function App() {
 
   return (
     <div className="app-wrapper">
-      <div className="navbar">
-        <p className="title" onClick={resetData}>Binomial Beacon</p>
-        <p className="motto">Lighting the way in options pricing</p>
-        <a href="https://github.com/Sebastian-git/BinomialBeacon" target="_blank" rel="noopener noreferrer" className="github-icon">
-          <FontAwesomeIcon icon={faGithub} size="2x" />
-        </a>
-      </div>
-  
       <div className="chart-wrapper">
         {dataLoaded && (
           <div id="stats-wrapper">
@@ -376,4 +492,4 @@ function App() {
   );
 }
 
-export default App;
+export default App
