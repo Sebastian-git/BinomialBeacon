@@ -4,7 +4,6 @@
   "homepage": "https://Sebastian-git.github.io/BinomialBeacon",
   "private": true,
   "dependencies": {
-    "@alpacahq/alpaca-trade-api": "^3.0.1",
     "@fortawesome/free-brands-svg-icons": "^6.4.2",
     "@fortawesome/free-solid-svg-icons": "^6.4.2",
     "@fortawesome/react-fontawesome": "^0.2.0",
@@ -23,11 +22,13 @@
     "react-tree-graph": "^8.0.1",
     "recharts": "^2.7.2",
     "typescript": "^4.9.5",
+    "wasm-lib": "file:wasm-lib/pkg",
     "web-vitals": "^2.1.4"
   },
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
+    "build-wasm": "cd wasm-lib && wasm-pack build --target web --out-dir pkg",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "predeploy": "npm run build",
