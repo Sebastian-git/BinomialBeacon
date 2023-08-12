@@ -1,4 +1,4 @@
-import { up_size, down_size, call_buy_payoff, put_buy_payoff, get_rnp } from "wasm-lib";
+import { up_size, down_size, call_buy_payoff, put_buy_payoff, get_rnp } from "./wasm-lib/pkg";
 import { BrowserRouter as Router, Route, Routes, useNavigate, useLocation } from 'react-router-dom';import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faArrowsToEye } from '@fortawesome/free-solid-svg-icons';
 import React, { useEffect, useState, useRef } from 'react';
