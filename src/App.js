@@ -1,3 +1,4 @@
+import { up_size, down_size, call_buy_payoff, put_buy_payoff, get_rnp } from "wasm-lib";
 import { BrowserRouter as Router, Route, Routes, useNavigate, useLocation } from 'react-router-dom';import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faArrowsToEye } from '@fortawesome/free-solid-svg-icons';
 import React, { useEffect, useState, useRef } from 'react';
@@ -10,16 +11,6 @@ import './App.css';
 function round(value, decimals) {
   return Number(Math.round(value+'e'+decimals)+'e-'+decimals);
 }
-
-const upSize = (stdDev, deltaT) => { return Math.exp((stdDev * 0.01) * Math.sqrt(deltaT)) };
-
-const downSize = (stdDev, deltaT) => { return 1.0/(Math.exp((stdDev * 0.01) * Math.sqrt(deltaT))) };
-
-const callBuyPayoff = (curPrice, strikePrice) => { return Math.max(curPrice - strikePrice, 0) };
-
-const putBuyPayoff = (curPrice, strikePrice) => { return Math.max(strikePrice - curPrice, 0) };
-
-const getRNP = (rfr, deltaT, downMove, upMove) => { return (Math.exp(rfr * deltaT) - downMove) / (upMove - downMove) };
 
 let rfr = 0.0375; 
 let totalTime = 20;
@@ -129,8 +120,8 @@ function Dashboard({
   const [steps, setSteps] = useState(1);
   const [deltaT, setDeltaT] =  useState(steps / steps);
   const [centerGraphTooltip, setCenterGraphTooltip] = useState(false);
-  const [upMove, setUpMove] = useState(() => upSize(stdDev, deltaT));
-  const [downMove, setDownMove] = useState(() => downSize(stdDev, deltaT));
+  const [upMove, setUpMove] = useState(() => up_size(stdDev, deltaT));
+  const [downMove, setDownMove] = useState(() => down_size(stdDev, deltaT));
   const [riskNeutralProbability, setRiskNeutralProbability] = useState(0);
   const [resetCount, setResetCount] = useState(0);
   const echartRef = useRef(null);
@@ -153,7 +144,7 @@ function Dashboard({
 
   
   useEffect(() => {
-    let RNP = getRNP(rfr, deltaT, downMove, upMove)
+    let RNP = get_rnp(rfr, deltaT, downMove, upMove)
     setRiskNeutralProbability(round(RNP, 4));
   }, [downMove, upMove, deltaT])
 
@@ -168,22 +159,22 @@ function Dashboard({
     // Just need to figure out if we want a fixed time till expiration or just deltaT always = 1 year vs 1 month, weigh options later
 
     // Size of up/down moves (functions return a %, stdDev whole number)
-    let newUpMove = upSize(stdDev, newDeltaT);
-    let newDownMove = downSize(stdDev, newDeltaT);
+    let newUpMove = up_size(stdDev, newDeltaT);
+    let newDownMove = down_size(stdDev, newDeltaT);
     setUpMove(newUpMove);
     setDownMove(newDownMove);
 
-    let RNP = getRNP(rfr, deltaT, downMove, upMove)
+    let RNP = get_rnp(rfr, deltaT, downMove, upMove)
     setRiskNeutralProbability(round(RNP, 4));
   }
 
   const createGraphData = (deltaT, curSteps, price, id = 0, parentId = null, optionType) => {
     let payoff;
     if (optionType === "call") {
-      payoff = callBuyPayoff(price, strikePrice);
+      payoff = call_buy_payoff(price, strikePrice);
     }
     else if (optionType === "put") {
-      payoff = putBuyPayoff(price, strikePrice);
+      payoff = put_buy_payoff(price, strikePrice);
     }
     
     let x = (steps - curSteps) * 100 * steps;
