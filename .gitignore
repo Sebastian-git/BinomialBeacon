@@ -102,3 +102,6 @@ dist
 
 # TernJS port file
 .tern-port
+
+# Exclude the target directory (Rust build artifacts)
+src/wasm-lib/target/
