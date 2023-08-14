@@ -74,3 +74,5 @@ Topics to mention in README :
 - Rust (new language, learning about benefits)
 - Web Assembly (difficult adding Rust to existing project)
 - Deployment (1st time using Github pages, learned about Actions & Workflows to use .env)
+
+- LinkedIn polls checking which UI is better (with side bar of options chain vs not)
