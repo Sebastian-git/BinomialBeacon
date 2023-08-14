@@ -9,12 +9,25 @@ This project offers an in-depth exploration into the intricate realm of quantita
 ### Setup
 
 1. Clone the master repository: 
-```
+```sh
 git clone https://github.com/Sebastian-git/BinomialBeacon.git
 ```
 2. Install Node.js from [here](https://nodejs.org/).
 3. Install Rust from [here](https://www.rust-lang.org/tools/install).
-4. Navigate to your cloned repository's directory and type `npm install` to download all dependencies.
+4. Navigate to your cloned repository's directory and type `npm install` to download all dependencies:
+```sh
+cd BinomialBeacon
+npm install
+```
+5. Compile Rust to WebAssembly (only necessary if you intend to make changes to the Rust code):
+```sh
+npm run build-wasm
+```
+6. Start the Project:
+```sh
+npm run start
+```
+
 
 ### Previews
 Previews & Screenshots coming soon 
