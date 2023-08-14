@@ -2,7 +2,7 @@
 
 ## Introduction
 
-This project offers an in-depth exploration into the intricate realm of quantitative finance. Initially, I aimed to visualize option strategies rooted in the Black-Scholes Model, a Nobel Prize-winning model in Economic Sciences. However, I transitioned to the Binomial Option Pricing Model for its robust assumptions critical for pricing American options. My motivation for this project comes from my passion about the complexity in financial markets, hoping to decode it through explanatory visualizations.
+This project offers an in-depth exploration into the intricate realm of quantitative finance. Initially, I aimed to visualize option strategies rooted in the Black-Scholes Model, a Nobel Prize-winning model in Economic Sciences. However, I transitioned to the Binomial Option Pricing Model for its robust assumptions critical for pricing American options. My motivation for this project comes from my passion about the complexity in financial markets, eager to decode it through explanatory visualizations.
 
 ## Usage
 
@@ -13,7 +13,8 @@ This project offers an in-depth exploration into the intricate realm of quantita
 git clone https://github.com/Sebastian-git/BinomialBeacon.git
 ```
 2. Install Node.js from [here](https://nodejs.org/).
-3. Navigate to your cloned repository's directory and type `npm install` to download all dependencies.
+3. Install Rust from [here](https://www.rust-lang.org/tools/install).
+4. Navigate to your cloned repository's directory and type `npm install` to download all dependencies.
 
 ### Previews
 Previews & Screenshots coming soon 
@@ -46,14 +47,10 @@ In Progress
 #### [back to the top](#title)
 
 
+<br /> <br /> <hr />
 
-
-
-
-# Binomial Beacon
-Frontend of a website aiming to simplify the Binomial Options Pricing Model
-
-Topics to mention in README:
+This section will be deleted once readme is complete.
+Topics to mention in README :
 
 - Black–Scholes model (Finance)
 - Binomial Option Pricing Model (Finance)
