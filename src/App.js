@@ -1,26 +1,16 @@
 import { up_size, down_size, call_buy_payoff, put_buy_payoff, get_rnp } from "./wasm-lib/pkg";
-import { BrowserRouter as Router, Route, Routes, useNavigate, useLocation } from 'react-router-dom';import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { BrowserRouter as Router, Route, Routes, useNavigate, useLocation } from 'react-router-dom';
 import { faArrowsToEye } from '@fortawesome/free-solid-svg-icons';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import React, { useEffect, useState, useRef } from 'react';
+import PolygonOptionsData from './optionsDataInterface';
 import OptionsDisplay from './OptionsDisplay';
 import ReactECharts from 'echarts-for-react';
-import PolygonOptionsData from './api.ts';
 import Navbar from './Navbar';
 import './App.css';
 
-function round(value, decimals) {
-  return Number(Math.round(value+'e'+decimals)+'e-'+decimals);
-}
-
-let rfr = 0.0375; 
-let totalTime = 20;
-
-let id = 0;
-let map = {};
-let siblings = {}
-let children = {}
-let fixMe = []
-let missing = []
+const RFR = 0.0375; 
+const TOTAL_TIME = 30;
 
 const polygonOptionsData = new PolygonOptionsData();
 
@@ -32,37 +22,67 @@ function App() {
   );
 }
 
+function useLocalStorageState(key, defaultValue) {
+  let storedValue;
+  try {
+      storedValue = JSON.parse(localStorage.getItem(key));
+  } catch (error) {
+      storedValue = localStorage.getItem(key);
+  }
+  const [value, setValue] = useState(storedValue || defaultValue);
+  useEffect(() => {
+      if ((Array.isArray(value) && value.length > 0) || (!Array.isArray(value) && value !== defaultValue))
+          localStorage.setItem(key, JSON.stringify(value));
+  }, [key, value, defaultValue]);
+  return [value, setValue];
+}
+
 
 function MainApp() {
-  const savedOptionsContracts = JSON.parse(localStorage.getItem('optionsContracts') || '[]');
-  const savedStockTicker = localStorage.getItem('stockTicker') || '';
+  const [optionsContracts, setOptionsContracts] = useLocalStorageState('optionsContracts', []);
+  const [selectedOption, setSelectedOption] = useLocalStorageState('selectedOption', null);
+  const [strikePrice, setStrikePrice] = useLocalStorageState('strikePrice', 100);
+  const [stockTicker, setStockTicker] = useLocalStorageState("stockTicker", "");
+  const [dataLoaded, setDataLoaded] = useLocalStorageState("dataLoaded", false);
+  const [stockPrice, setStockPrice] = useLocalStorageState("stockPrice", 100);
+  const [stdDev, setStdDev] = useLocalStorageState('stdDev', 19);
+  const [steps, setSteps] = useLocalStorageState('steps', 1);
   
-  const [stockTicker, setStockTicker] = useState(savedStockTicker);
-  const [optionsContracts, setOptionsContracts] = useState(savedOptionsContracts);
-  const [selectedOption, setSelectedOption] = useState(null);
-  const [searched, setSearched] = useState(false);
-  const [stockPrice, setStockPrice] = useState(100);
-  const [strikePrice, setStrikePrice] = useState(100);
   const [optionType, setOptionType] = useState("call");
-  const [dataLoaded, setDataLoaded] = useState(false);
-  const [stdDev, setStdDev] = useState(19);
+  const [searched, setSearched] = useState(false);
   
   const resetData = () => {
-    setSearched(false);
-    setStockTicker("");
+    setSelectedOption(null);
     setOptionType("call");
     setDataLoaded(false);
-    setStockPrice(100);
     setStrikePrice(100);
+    setSearched(false);
+    setStockTicker("");
+    setStockPrice(100);
     setStdDev(19);
+    setSteps(1);
     localStorage.removeItem("optionsContracts");
+    localStorage.removeItem("selectedOption");
     localStorage.removeItem("stockTicker");
+    localStorage.removeItem("strikePrice");
+    localStorage.removeItem("dataLoaded");
+    localStorage.removeItem("stockPrice");
   };
 
   useEffect(() => {
-    localStorage.setItem('optionsContracts', JSON.stringify(optionsContracts));
-    localStorage.setItem('stockTicker', stockTicker);
-  }, [optionsContracts, stockTicker]);
+    if (selectedOption !== null) 
+        localStorage.setItem('selectedOption', JSON.stringify(selectedOption));
+    if (Array.isArray(optionsContracts) && optionsContracts.length > 0)
+        localStorage.setItem('optionsContracts', JSON.stringify(optionsContracts));
+    if (stockTicker !== "")
+        localStorage.setItem("stockTicker", stockTicker);
+    if (dataLoaded !== false) 
+        localStorage.setItem("dataLoaded", true);
+    if (selectedOption !== null && stockTicker !== "") {
+      localStorage.setItem("strikePrice", strikePrice);
+      localStorage.setItem("stockPrice", stockPrice);
+    }
+  }, [optionsContracts, selectedOption, stockTicker, dataLoaded]);
 
   return (
     <>
@@ -88,6 +108,8 @@ function MainApp() {
           setDataLoaded={setDataLoaded}
           stdDev={stdDev}
           setStdDev={setStdDev}
+          steps={steps}
+          setSteps={setSteps}
         />} />
         <Route path="/optionsDisplay" element={<OptionsDisplay optionsContracts={optionsContracts} setSelectedOption={setSelectedOption} />} />
       </Routes>
@@ -114,25 +136,42 @@ function Dashboard({
   dataLoaded,
   setDataLoaded,
   stdDev,
-  setStdDev
+  setStdDev,
+  steps,
+  setSteps
 }) {
 
-  const [steps, setSteps] = useState(1);
-  const [deltaT, setDeltaT] =  useState(steps / steps);
-  const [centerGraphTooltip, setCenterGraphTooltip] = useState(false);
-  const [upMove, setUpMove] = useState(() => up_size(stdDev, deltaT));
-  const [downMove, setDownMove] = useState(() => down_size(stdDev, deltaT));
   const [riskNeutralProbability, setRiskNeutralProbability] = useState(0);
+  const [centerGraphTooltip, setCenterGraphTooltip] = useState(false);
+  const [invalidStockTooltip, setInvalidStockTooltip] = useState(false);
+  const [deltaT, setDeltaT] =  useState(steps / steps);
+  const [downMove, setDownMove] = useState(() => down_size(stdDev, deltaT));
+  const [upMove, setUpMove] = useState(() => up_size(stdDev, deltaT));
   const [resetCount, setResetCount] = useState(0);
+  const [links, setLinks] = useState([]);
   const echartRef = useRef(null);
   let navigate = useNavigate();
-  const location = useLocation();
+  var map = {};
+  var id = 0;
+  let root = {
+    name: `${stockPrice, 3} (0) 0-0`,
+    children: [],
+    optionValue: 0
+  };
+  const [nodes, setNodes] = useState([root]);
+
+  useEffect(() => {
+    updateTimeStep(steps);
+  }, []); 
 
   useEffect(() => {
     if (selectedOption) {
       setStrikePrice(selectedOption.strikePrice);
-      setSelectedOption(null); 
-      getStockData();
+      if (searched) {
+        getStockData();
+      } else {
+
+      }
     }
   }, [selectedOption]);
   
@@ -141,22 +180,39 @@ function Dashboard({
     chartInstance.clear(); 
     chartInstance.setOption(getGraphOption());
   }, [resetCount]);
-
   
   useEffect(() => {
-    let RNP = get_rnp(rfr, deltaT, downMove, upMove)
-    setRiskNeutralProbability(round(RNP, 4));
+    let RNP = get_rnp(RFR, deltaT, downMove, upMove)
+    setRiskNeutralProbability(RNP, 4);
   }, [downMove, upMove, deltaT])
 
+  useEffect(() => {
+    resetGraphVariables();
+    let graphData = createGraphData(deltaT, steps, stockPrice, null, optionType);
+
+    graphData.nodes.forEach(node => {
+      node.name = node.name.replace(/\n.*$/, '');
+      if (node.optionValue <= 0) {
+        node.itemStyle = { color: 'red'}
+      } else {
+        node.itemStyle = { color: 'green'}
+      }
+    });
+    setNodes(graphData.nodes);
+    setLinks(graphData.links);
+  }, [steps, upMove, downMove, riskNeutralProbability, optionType, stockPrice, stdDev]);
+
+  const resetGraphVariables = () => {
+    id = 0;
+    map = {};
+  };
 
   const updateTimeStep = (timeSteps) => {
     id = 0;
     map = {};
-    setSteps(timeSteps) // Number of steps in total time
-    let newDeltaT = timeSteps / timeSteps;
-    setDeltaT(newDeltaT) // Amount of time between each step (totalTime / timeSteps)
-    // EX: If total time was 5 years and we had 5 steps, deltaT = 1 year
-    // Just need to figure out if we want a fixed time till expiration or just deltaT always = 1 year vs 1 month, weigh options later
+    setSteps(timeSteps) 
+    let newDeltaT = timeSteps / TOTAL_TIME;
+    setDeltaT(newDeltaT) 
 
     // Size of up/down moves (functions return a %, stdDev whole number)
     let newUpMove = up_size(stdDev, newDeltaT);
@@ -164,11 +220,11 @@ function Dashboard({
     setUpMove(newUpMove);
     setDownMove(newDownMove);
 
-    let RNP = get_rnp(rfr, deltaT, downMove, upMove)
-    setRiskNeutralProbability(round(RNP, 4));
+    let RNP = get_rnp(RFR, deltaT, downMove, upMove)
+    setRiskNeutralProbability(RNP, 4);
   }
 
-  const createGraphData = (deltaT, curSteps, price, id = 0, parentId = null, optionType) => {
+  const createGraphData = (deltaT, curSteps, price, id = 0, optionType) => {
     let payoff;
     if (optionType === "call") {
       payoff = call_buy_payoff(price, strikePrice);
@@ -181,10 +237,9 @@ function Dashboard({
     let optionValue = payoff;
     let y = id * 25 * steps;
   
-    let nodeName = `${round(price, 2)} (${round(optionValue, 2)}) \n${curSteps}-${id}`;
+    let nodeName = `${price.toFixed(2)} (${optionValue.toFixed(2)}) \n${curSteps}-${id}`;
   
     if (map[nodeName]) {
-      missing.push(nodeName.replace(/\n.*$/, ''))
       return { nodes: [], links: [] };
     }
   
@@ -203,8 +258,8 @@ function Dashboard({
     let upPrice = price * upMove;
     let downPrice = price * downMove;
   
-    let upResult = createGraphData(deltaT, curSteps - 1, upPrice, id + 1, nodeName, optionType);
-    let downResult = createGraphData(deltaT, curSteps - 1, downPrice, id - 1, nodeName, optionType);
+    let upResult = createGraphData(deltaT, curSteps - 1, upPrice, id + 1, optionType);
+    let downResult = createGraphData(deltaT, curSteps - 1, downPrice, id - 1, optionType);
   
     let linkToUpChild = {
       source: node.name,
@@ -215,58 +270,12 @@ function Dashboard({
       source: node.name,
       target: downResult.nodes[0]?.name
     };
-
-    if (upResult.nodes.length === 0 || downResult.nodes.length === 0) {
-      fixMe.push(nodeName.replace(/\n.*$/, ''))
-    }
-
-    siblings[upResult.nodes[0]?.name.replace(/\n.*$/, '')] = downResult.nodes[0]?.name
-    siblings[downResult.nodes[0]?.name.replace(/\n.*$/, '')] = upResult.nodes[0]?.name
-    children[nodeName.replace(/\n.*$/, '')] = [upResult, downResult]
   
     return {
       nodes: [node, ...upResult.nodes, ...downResult.nodes],
       links: [linkToUpChild, linkToDownChild, ...upResult.links, ...downResult.links]
     };
   };
-
-  let root = {
-    name: `${round(stockPrice, 3)} (0) 0-0`,
-    children: [],
-    optionValue: 0
-  };
-
-  const [nodes, setNodes] = useState([root]);
-  const [links, setLinks] = useState([]);
-
-  const resetGraphVariables = () => {
-    id = 0;
-    map = {};
-    siblings = {};
-    children = {};
-    fixMe = [];
-    missing = [];
-  };
-
-  useEffect(() => {
-    resetGraphVariables();
-    let graphData = createGraphData(deltaT, steps, stockPrice, null, root, optionType);
-
-    graphData.nodes.forEach(node => {
-      node.name = node.name.replace(/\n.*$/, '');
-      if (node.optionValue <= 0) {
-        if (true) { //!children[node.name]
-          node.itemStyle = { color: 'red'}
-          // console.log("node should be red:", node)
-        }
-      } else {
-        node.itemStyle = { color: 'green'}
-      }
-    });
-    setNodes(graphData.nodes);
-    setLinks(graphData.links);
-  }, [steps, upMove, downMove, riskNeutralProbability, optionType, stockPrice, stdDev]);
-  
 
   const getGraphOption = () => {
     return {
@@ -277,7 +286,7 @@ function Dashboard({
         {
           type: 'graph',
           layout: 'none',
-          symbolSize: Math.max(7, 30 - (Math.pow(2, steps/3))),
+          symbolSize: Math.max(7, 35 - (Math.pow(2, steps/3))),
           roam: true,
           label: {
             show: true,
@@ -301,12 +310,15 @@ function Dashboard({
     };
   };
 
-  useEffect(() => {
-    updateTimeStep(steps);
-  }, []); 
-
   const handleStockTickerChange = (event) => {
-    let newTicker = event.target.value.toUpperCase()
+    let newTicker = event.target.value.toUpperCase();
+    if (newTicker.length > 5) {
+      setInvalidStockTooltip(true);
+      return;
+    }
+    else if (newTicker.length < 6 && invalidStockTooltip === true)  {
+      setInvalidStockTooltip(false);
+    }
     setStockTicker(newTicker);
   };
 
@@ -345,29 +357,38 @@ function Dashboard({
     let jumpDistance = stdDev/4;
     let res = [group[middle]];
     let l = middle-1, r = middle+1;
-    for(let i = 1; i <= 4 && l >= 0; i++) {
-        while(l >= 0 && group[l].strikePrice > group[middle].strikePrice - i * jumpDistance) 
+    for (let i = 1; i <= 4 && l >= 0; i++) {
+        while (l >= 0 && group[l].strikePrice > group[middle].strikePrice - i * jumpDistance) 
             l--;
-        if(l >= 0) 
+        if (l >= 0) 
           res.push(group[l]);
     }
-    for(let i = 1; i <= 4 && r < group.length; i++) {
-        while(r < group.length && group[r].strikePrice < group[middle].strikePrice + i * jumpDistance)
-            r++;
-        if(r < group.length) 
-            res.push(group[r]);
+    for (let i = 1; i <= 4 && r < group.length; i++) {
+        while (r < group.length && group[r].strikePrice < group[middle].strikePrice + i * jumpDistance)
+          r++;
+        if (r < group.length) 
+          res.push(group[r]);
     }
     return res.sort((a, b) => a.strikePrice - b.strikePrice);
   }
   
   const getOptionsContracts = async () => {
-    let queries = {
+    let options = await polygonOptionsData.getOptionsContracts({
       "underlying_ticker": stockTicker,
       "contract_type": optionType,
       "limit": 1000,
       "sort": "expiration_date"
+    });
+
+    if (options.length === 0) {
+      if (navigator.vibrate) {
+        navigator.vibrate(200);
+      }
+      setInvalidStockTooltip(true);
+      setTimeout(() => {
+        setInvalidStockTooltip(false);
+      }, 3000);
     }
-    let options = await polygonOptionsData.getOptionsContracts(queries);
 
     const groupedContracts = groupContractsByExpiration(options);
     const averageStrikePrices = calculateAverages(groupedContracts);
@@ -375,7 +396,6 @@ function Dashboard({
 
     const trimmedGroup = groupedContracts.map((group, i) => getNine(group, stdDevs[i]));
     setOptionsContracts(trimmedGroup);
-    console.log("passing:", trimmedGroup)
     navigate("/optionsDisplay", { state: { optionsContracts: trimmedGroup } });
     return (
         <Router>
@@ -391,14 +411,14 @@ function Dashboard({
     await polygonOptionsData.getDailyClosingPrices(stockTicker);
     let newPrice = await polygonOptionsData.getStockPrice(stockTicker)
     let newStdDev = await polygonOptionsData.getStandardDeviation(stockTicker)
-    setStdDev(round(newStdDev, 4))
+    setStdDev(newStdDev.toFixed(2), 4)
     setStockPrice(newPrice)
     setDataLoaded(true);
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (searched) {
+    if (searched || dataLoaded) {
       resetData();
     } else {
       setSearched(true);
@@ -437,7 +457,7 @@ function Dashboard({
         )}
         <ReactECharts ref={echartRef} className="react-echarts" option={getGraphOption()} style={{height: '65vh', width: '90vw', margin: "auto"}}/>
         
-        <button id="refresh-graph-button" onClick={() => setResetCount(resetCount + 1)} onMouseEnter={() => setCenterGraphTooltip(true)} onMouseLeave={() => setCenterGraphTooltip(false)} >
+        <button id="recenter-graph-button" onClick={() => setResetCount(resetCount + 1)} onMouseEnter={() => setCenterGraphTooltip(true)} onMouseLeave={() => setCenterGraphTooltip(false)} >
           {centerGraphTooltip && <div id="refresh-graph-tooltip">Re-center graph</div>}
           <FontAwesomeIcon id="refresh-graph-icon" icon={faArrowsToEye} />
         </button>
@@ -445,36 +465,37 @@ function Dashboard({
 
       <div>
         <form onSubmit={handleSubmit} className="form-wrapper">
-          {!searched && (
+          {!dataLoaded && (
             <>
-          <div className="form-item">
-            <label htmlFor="stock-ticker" className="form-name">Stock ticker</label>
-            <input id="stock-ticker-input" type="text" value={stockTicker} onChange={handleStockTickerChange} />
-          </div>
-            <div className="form-item">
-              <label className="form-name">Option Type</label>
-              <div id="option-type-wrapper">
-                <div className="option-type-item">
-                  <label htmlFor="put">Put</label>
-                  <input type="radio" id="put" name="optionType" value="put" onChange={handleOptionTypeChange} checked={optionType === "put"} />
-                </div>
-                <div className="option-type-item">
-                  <label htmlFor="call">Call</label>
-                  <input type="radio" id="call" name="optionType" value="call" onChange={handleOptionTypeChange} checked={optionType === "call"} />
+              <div className="form-item">
+                <label htmlFor="stock-ticker" className="form-name">Stock ticker</label>
+                <input id="stock-ticker-input" type="text" value={stockTicker} onChange={handleStockTickerChange} />
+                {invalidStockTooltip && <div id="invalid-ticker-tooltip">Invalid Ticker</div>}
+              </div>
+              <div className="form-item">
+                <label className="form-name">Option Type</label>
+                <div id="option-type-wrapper">
+                  <div className="option-type-item">
+                    <label htmlFor="put">Put</label>
+                    <input type="radio" id="put" name="optionType" value="put" onChange={handleOptionTypeChange} checked={optionType === "put"} />
+                  </div>
+                  <div className="option-type-item">
+                    <label htmlFor="call">Call</label>
+                    <input type="radio" id="call" name="optionType" value="call" onChange={handleOptionTypeChange} checked={optionType === "call"} />
+                  </div>
                 </div>
               </div>
-            </div>
             </>
           )}
           {dataLoaded && (
             <div id="timestep-control-input">
               <p>Timesteps = {steps} </p>
-              <input type="range" min="1" max={totalTime} value={steps}
+              <input type="range" min="1" max={TOTAL_TIME} value={steps}
                 onChange={(e) => updateTimeStep(Number(e.target.value))} />
             </div>
           )}
           <div className="form-item">
-            <button className="btn-search" type="submit">{searched ? 'Reset' : 'Search'}</button>
+            <button className="btn-search" type="submit">{dataLoaded ? 'Reset' : 'Search'}</button>
           </div>
         </form>
       </div>

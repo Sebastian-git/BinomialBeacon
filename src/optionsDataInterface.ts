@@ -2,21 +2,17 @@ import axios from 'axios';
 
 interface OptionsData {
   getDailyClosingPrices: (ticker: string) => Promise<number[]>;
-  getStockPrice: (ticker: string) => Promise<number>;
-  getStrikePrice: (ticker: string) => Promise<number>;
-  getTimeToExpiration: () => number;
-  getRiskFreeRate: () => Promise<number>;
   getStandardDeviation: (ticker: string) => Promise<number>;
+  getStockPrice: (ticker: string) => Promise<number>;
+  getRiskFreeRate: () => Promise<number>;
 }
 
 class PolygonOptionsData implements OptionsData {
   stockData: any;
-  optionData: any;
   stockClosingData: any;
 
   constructor() {
     this.stockData = null;
-    this.optionData = null;
     this.stockClosingData = null;
   }
   
@@ -52,6 +48,7 @@ class PolygonOptionsData implements OptionsData {
     } catch (error) {
       console.error('API Error fetching options contracts: ', error);
     }
+    console.error('API Error invalid ticker');
     return [];
   }
 
@@ -92,37 +89,8 @@ class PolygonOptionsData implements OptionsData {
     }
     return 0;
   }
-
-  public async getStrikePrice(ticker: string): Promise<number> {
-    if (!this.optionData)
-      try {
-        const response = await axios.get(`https://api.polygon.io/v3/reference/options/contracts/O:${ticker}?apiKey=${process.env.POLYGON_API_KEY}`)
-        if (!response.data || !response.data.results) {
-          throw new Error('Invalid response data');
-        }
-        this.optionData = response.data
-        return response.data.results.strike_price;
-      } catch (error) {
-        console.error('Error fetching options data: ', error);
-      }
-    return this.optionData.results.strike_price;;
-  }
-  
-  public getTimeToExpiration(): number {
-    if (this.optionData) {
-      const expDate = new Date(this.optionData.results.expiration_date);
-      const today = new Date();
-      const timeDiffInMs = expDate.getTime() - today.getTime();
-      return Math.ceil(timeDiffInMs / (1000 * 3600 * 24));
-    }
-    return 0;
-  }
   
   public async getRiskFreeRate(): Promise<number> {
-    return 0;
-  }
-
-  public async getOptionPrice(): Promise<number> {
     return 0;
   }
 

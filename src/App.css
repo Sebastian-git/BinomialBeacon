@@ -27,12 +27,13 @@ body {
   padding: 20px 0;
   margin: 2vh auto 0;
   width: 90vw;
+  height: 68vh;
   border-radius: 15px;
 }
 
-#refresh-graph-button {
-  margin-bottom: -4vh;
-  margin-left: 2vw;
+#recenter-graph-button {
+  margin-top: -5vh;
+  margin-left: 3vw;
   background-color: black;
   color: white;
   border: none;
@@ -56,6 +57,11 @@ body {
   animation: fadeIn 0.1s forwards;
   margin-left: -3vw;
   margin-top: -4.8vh;
+}
+
+#invalid-ticker-tooltip {
+  margin-top: 0.3em;
+  color: red;
 }
 
 @keyframes fadeIn {
