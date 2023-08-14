@@ -1,4 +1,56 @@
 # Binomial Beacon
+
+## Introduction
+
+This project offers an in-depth exploration into the intricate realm of quantitative finance. Initially, I aimed to visualize option strategies rooted in the Black-Scholes Model, a Nobel Prize-winning model in Economic Sciences. However, I transitioned to the Binomial Option Pricing Model for its robust assumptions critical for pricing American options. My motivation for this project comes from my passion about the complexity in financial markets, hoping to decode it through explanatory visualizations.
+
+## Usage
+
+### Setup
+
+1. Clone the master repository: 
+```
+git clone https://github.com/Sebastian-git/BinomialBeacon.git
+```
+2. Install Node.js from [here](https://nodejs.org/).
+3. Navigate to your cloned repository's directory and type `npm install` to download all dependencies.
+
+### Previews
+Previews & Screenshots coming soon 
+
+## Technical Information
+
+This project was built on a variety of technologies, with each offering its unique challenges and learning curves:
+
+- **React**: The core library used for building the UI. After experimenting with several other libraries, I created the visualizations with [React ECharts](https://github.com/hustcc/echarts-for-react), a React wrapper for [Apache ECharts](https://echarts.apache.org/examples/en/index.html).
+
+- **Typescript**: To develop a custom interface with an emphasis on type safety, enabling efficient switches between different options pricing API's for the live data. This search took so long because most finance API's don't provide an option's strike price, a critical variable in the equation. After experimenting with over 5 different API's, I was sure that the [Polygon API](https://polygon.io/docs/options/get_v3_reference_options_contracts) was the best choice for the project.
+
+- **Rust**: This performant and reliable language was used to optimize all computational functions for the application. The computation necessary for this recursive model seems fit for a language with a run time speed often outranking historically fast languages like C.
+
+- **WebAssembly**: My project values the portability of a website more than the performance of a pure Rust application. Integrating Rust into an existing React application and having it work harmoniously with WebAssembly was a significant challenge.
+
+- **GitHub Pages & Actions**: Add more later
+
+A noteworthy implementation detail is the algorithm to select relevant option contracts. The typescript API only fetches a large set of option contracts, so this algorithm must calculate the mean strike price, then select the next 4 strike prices every half standard deviation, ensuring the user gets the most relevant results.
+
+Additionally, the application is designed with responsiveness in mind, ensuring a seamless experience for both desktop and mobile users.
+
+## Launch
+
+The application is built on **JavaScript ES6+** and uses the latest web technologies for a smooth user experience.
+
+## Status:
+In Progress
+
+#### [back to the top](#title)
+
+
+
+
+
+
+# Binomial Beacon
 Frontend of a website aiming to simplify the Binomial Options Pricing Model
 
 Topics to mention in README:
