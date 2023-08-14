@@ -169,8 +169,6 @@ function Dashboard({
       setStrikePrice(selectedOption.strikePrice);
       if (searched) {
         getStockData();
-      } else {
-
       }
     }
   }, [selectedOption]);
@@ -418,6 +416,10 @@ function Dashboard({
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (stockTicker.length > 5 || stockTicker.length <= 0) {
+      setInvalidStockTooltip(true);
+      return;
+    }
     if (searched || dataLoaded) {
       resetData();
     } else {
