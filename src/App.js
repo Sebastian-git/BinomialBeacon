@@ -386,6 +386,7 @@ function Dashboard({
       setTimeout(() => {
         setInvalidStockTooltip(false);
       }, 3000);
+      return;
     }
 
     const groupedContracts = groupContractsByExpiration(options);
@@ -416,10 +417,11 @@ function Dashboard({
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (stockTicker.length > 5 || stockTicker.length <= 0) {
+    if (stockTicker.length > 5 || stockTicker.length <= 0 || invalidStockTooltip) {
       setInvalidStockTooltip(true);
       return;
     }
+    console.log("handleSubmit",stockTicker, stockTicker.length)
     if (searched || dataLoaded) {
       resetData();
     } else {
