@@ -2,8 +2,12 @@ import { useNavigate } from 'react-router-dom';
 import React from 'react';
 import './OptionsDisplay.css';
 
-function OptionsDisplay({optionsContracts, setSelectedOption}) {
+function OptionsDisplay({optionsContracts, setSelectedOption, resetData}) {
     let navigate = useNavigate();
+    if (Array.isArray(optionsContracts) && optionsContracts.length == 0) {
+        resetData();
+        navigate("/");
+    }
     
     return (
         <div>

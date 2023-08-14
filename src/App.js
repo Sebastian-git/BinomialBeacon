@@ -111,7 +111,7 @@ function MainApp() {
           steps={steps}
           setSteps={setSteps}
         />} />
-        <Route path="/optionsDisplay" element={<OptionsDisplay optionsContracts={optionsContracts} setSelectedOption={setSelectedOption} />} />
+        <Route path="/optionsDisplay" element={<OptionsDisplay optionsContracts={optionsContracts} setSelectedOption={setSelectedOption} resetData={resetData} />} />
       </Routes>
     </>
   );
