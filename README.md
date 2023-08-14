@@ -1,4 +1,4 @@
-# Binomial Beacon
+# <a name="title" /> Binomial Beacon
 
 ## Introduction
 
@@ -31,7 +31,7 @@ This project was built on a variety of technologies, with each offering its uniq
 
 - **WebAssembly**: My project values the portability of a website more than the performance of a pure Rust application. Integrating Rust into an existing React application and having it work harmoniously with WebAssembly was a significant challenge.
 
-- **GitHub Pages & Actions**: Add more later
+- **GitHub Pages & Actions**: To avoid manually compiling & linking Rust code to the rest of the project, a [Github workflow](https://docs.github.com/en/actions/using-workflows) was configured to automate deployment to Github Pages. Live hosting presented several challenges like adding [environment secrets](https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment#environment-secrets) for the API keys, learning about an entirely new [workflow syntax](https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions), and finally [triggering workflows](https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows) on each push to main to fully automate deployment.
 
 A noteworthy implementation detail is the algorithm to select relevant option contracts. The typescript API only fetches a large set of option contracts, so this algorithm must calculate the mean strike price, then select the next 4 strike prices every half standard deviation, ensuring the user gets the most relevant results.
 
