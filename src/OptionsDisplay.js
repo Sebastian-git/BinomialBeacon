@@ -1,14 +1,15 @@
 import { useNavigate } from 'react-router-dom';
-import React from 'react';
+import React, { useEffect } from 'react';
 import './OptionsDisplay.css';
 
 function OptionsDisplay({optionsContracts, setSelectedOption, resetData}) {
-    let navigate = useNavigate();
-    if (Array.isArray(optionsContracts) && optionsContracts.length == 0) {
-        resetData();
-        navigate("/");
-    }
-    
+    const navigate = useNavigate();
+    useEffect(() => {
+        if (Array.isArray(optionsContracts) && optionsContracts.length == 0) {
+            resetData();
+            navigate("/");
+        }
+    }, [])
     return (
         <div>
             <div className="options-display">

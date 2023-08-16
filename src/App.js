@@ -9,7 +9,6 @@ import ReactECharts from 'echarts-for-react';
 import Navbar from './Navbar';
 import './App.css';
 
-const RFR = 0.0375; 
 const TOTAL_TIME = 30;
 
 const polygonOptionsData = new PolygonOptionsData();
@@ -47,6 +46,7 @@ function MainApp() {
   const [stockPrice, setStockPrice] = useLocalStorageState("stockPrice", 100);
   const [stdDev, setStdDev] = useLocalStorageState('stdDev', 19);
   const [steps, setSteps] = useLocalStorageState('steps', 1);
+  const [RFR, setRFR] = useLocalStorageState("RFR", 0.05);
   
   const [optionType, setOptionType] = useState("call");
   const [searched, setSearched] = useState(false);
@@ -67,6 +67,9 @@ function MainApp() {
     localStorage.removeItem("strikePrice");
     localStorage.removeItem("dataLoaded");
     localStorage.removeItem("stockPrice");
+    localStorage.removeItem("stdDev");
+    localStorage.removeItem("steps");
+    localStorage.removeItem("RFR");
   };
 
   useEffect(() => {
@@ -81,6 +84,7 @@ function MainApp() {
     if (selectedOption !== null && stockTicker !== "") {
       localStorage.setItem("strikePrice", strikePrice);
       localStorage.setItem("stockPrice", stockPrice);
+      localStorage.setItem("RFR", RFR)
     }
   }, [optionsContracts, selectedOption, stockTicker, dataLoaded]);
 
@@ -110,6 +114,8 @@ function MainApp() {
           setStdDev={setStdDev}
           steps={steps}
           setSteps={setSteps}
+          RFR={RFR}
+          setRFR={setRFR}
         />} />
         <Route path="/optionsDisplay" element={<OptionsDisplay optionsContracts={optionsContracts} setSelectedOption={setSelectedOption} resetData={resetData} />} />
       </Routes>
@@ -138,7 +144,9 @@ function Dashboard({
   stdDev,
   setStdDev,
   steps,
-  setSteps
+  setSteps,
+  RFR,
+  setRFR
 }) {
 
   const [riskNeutralProbability, setRiskNeutralProbability] = useState(0);
@@ -150,7 +158,7 @@ function Dashboard({
   const [resetCount, setResetCount] = useState(0);
   const [links, setLinks] = useState([]);
   const echartRef = useRef(null);
-  let navigate = useNavigate();
+  const navigate = useNavigate();
   var map = {};
   var id = 0;
   let root = {
@@ -169,6 +177,7 @@ function Dashboard({
       setStrikePrice(selectedOption.strikePrice);
       if (searched) {
         getStockData();
+        getRFR();
       }
     }
   }, [selectedOption]);
@@ -369,6 +378,20 @@ function Dashboard({
     }
     return res.sort((a, b) => a.strikePrice - b.strikePrice);
   }
+
+  const getRFR = async () => {
+    let newRFR = await polygonOptionsData.getRiskFreeRate();
+    setRFR(newRFR);
+  }
+
+  const getStockData = async () => {
+    await polygonOptionsData.getDailyClosingPrices(stockTicker);
+    let newPrice = await polygonOptionsData.getStockPrice(stockTicker)
+    let newStdDev = await polygonOptionsData.getStandardDeviation(stockTicker)
+    setStdDev(newStdDev.toFixed(2), 4)
+    setStockPrice(newPrice)
+    setDataLoaded(true);
+  };
   
   const getOptionsContracts = async () => {
     let options = await polygonOptionsData.getOptionsContracts({
@@ -377,7 +400,6 @@ function Dashboard({
       "limit": 1000,
       "sort": "expiration_date"
     });
-
     if (options.length === 0) {
       if (navigator.vibrate) {
         navigator.vibrate(200);
@@ -406,22 +428,12 @@ function Dashboard({
     );
   }
 
-  const getStockData = async () => {
-    await polygonOptionsData.getDailyClosingPrices(stockTicker);
-    let newPrice = await polygonOptionsData.getStockPrice(stockTicker)
-    let newStdDev = await polygonOptionsData.getStandardDeviation(stockTicker)
-    setStdDev(newStdDev.toFixed(2), 4)
-    setStockPrice(newPrice)
-    setDataLoaded(true);
-  };
-
   const handleSubmit = (e) => {
     e.preventDefault();
     if (stockTicker.length > 5 || stockTicker.length <= 0 || invalidStockTooltip) {
       setInvalidStockTooltip(true);
       return;
     }
-    console.log("handleSubmit",stockTicker, stockTicker.length)
     if (searched || dataLoaded) {
       resetData();
     } else {
