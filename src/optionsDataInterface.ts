@@ -91,6 +91,17 @@ class PolygonOptionsData implements OptionsData {
   }
   
   public async getRiskFreeRate(): Promise<number> {
+    try {
+        const response = await axios.get(`https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v2/accounting/od/avg_interest_rates?sort=-record_date&format=json&page[number]=1&page[size]=1`);
+        if (!response.data || !response.data.data || response.data.data.length === 0) {
+            throw new Error('Invalid response data');
+        }
+        const latestData = response.data.data[0];
+        const riskFreeRate = parseFloat(latestData.avg_interest_rate_amt);
+        return riskFreeRate;
+    } catch (error) {
+        console.error('API Error fetching risk free rate: ', error);
+    }
     return 0;
   }
 
