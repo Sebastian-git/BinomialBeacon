@@ -91,4 +91,7 @@ Topics to mention in README :
 - Web Assembly (difficult adding Rust to existing project)
 - Deployment (1st time using Github pages, learned about Actions & Workflows to use .env)
 
+Stuff I'd like to add in the future:
 - LinkedIn polls checking which UI is better (with side bar of options chain vs not)
+- Tests to see accuracy of option pricing? Possibly through a whole new kind of backtesting program, can make a options finance program suite?
+- Account for dividend yields in calculation for risk neutral probability
