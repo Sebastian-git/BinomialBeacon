@@ -7,7 +7,7 @@ pub fn up_size(std_dev: f64, delta_t: f64) -> f64 {
 
 #[wasm_bindgen]
 pub fn down_size(std_dev: f64, delta_t: f64) -> f64 {
-    (-1.0 * std_dev * delta_t.sqrt()).exp()
+    1.0 / (std_dev * delta_t.sqrt()).exp()
 }
 
 #[wasm_bindgen]

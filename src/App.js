@@ -19,8 +19,7 @@ function App() {
     </Router>
   );
 }
-// strike 325, exp 08/18/23, newstrike 320.40, tte 
-// strike 325, exp 02/16/24, newstirke 320.40
+
 function useLocalStorageState(key, defaultValue) {
   let storedValue;
   try {
@@ -122,7 +121,7 @@ function MainApp() {
           timeToExpiration={timeToExpiration}
           setTimeToExpiration={setTimeToExpiration}
         />} />
-        <Route path="/optionsDisplay" element={<OptionsDisplay optionsContracts={optionsContracts} setSelectedOption={setSelectedOption} resetData={resetData} />} />
+        <Route path="/optionsDisplay" element={<OptionsDisplay optionsContracts={optionsContracts} setSelectedOption={setSelectedOption} resetData={resetData} stockTicker={stockTicker} stockPrice={stockPrice} />} />
       </Routes>
     </>
   );
@@ -184,7 +183,6 @@ function Dashboard({
       setStrikePrice(selectedOption.strikePrice);
       if (searched) {
         getRFR();
-        getStockData();
         getTimeToExpiration();
       }
     }
@@ -219,67 +217,68 @@ function Dashboard({
     map = {};
     let newDeltaT = (timeToExpiration / timeSteps) || 1;
     let newUpMove = up_size(stdDev, newDeltaT);
-    let newDownMove = (1/newUpMove) //down_size(stdDev, newDeltaT);
+    let newDownMove = down_size(stdDev, newDeltaT);
     let newRNP = get_rnp(RFR, newDeltaT, newUpMove, newDownMove)
-    setSteps(timeSteps) 
-    setDeltaT(newDeltaT) 
+    setSteps(timeSteps);
+    setDeltaT(newDeltaT); 
     setUpMove(newUpMove);
     setDownMove(newDownMove);
     setRiskNeutralProbability(newRNP);
+    setResetCount(resetCount + 1)
   }
 
-  const createGraphData = (curSteps, price, id = 0, optionType) => {
+  const createGraphData = (curSteps, stockPrice, id = 0, optionType) => {
     let payoff;
-    if (optionType === "call") payoff = call_buy_payoff(price, strikePrice);
-    else if (optionType === "put") payoff = put_buy_payoff(price, strikePrice);
+    if (optionType === "call") payoff = call_buy_payoff(stockPrice, strikePrice);
+    else if (optionType === "put") payoff = put_buy_payoff(stockPrice, strikePrice);
     let optionValue = payoff;
-    let nodeName = `${price.toFixed(2)} \n${curSteps}-${id}`; //(${optionValue.toFixed(2)})
-    if (map[nodeName]) {
-      return { nodes: [], links: [], name: nodeName, optionPrice: price };
-    }
+    let nodeName = `${stockPrice.toFixed(2)} \n${curSteps}-${id}`;
+    if (map[nodeName]) return { nodes: [], links: [], name: nodeName, optionPrice: stockPrice };
     let node = {
       name: nodeName,
       value: "this is the value",
       id: nodeName,
       optionValue: optionValue, 
-      optionPrice: price,
+      optionPrice: stockPrice,
       x: (steps - curSteps) * 100 * steps,
       y: -id * 25 * steps,
       tooltip: {
-        formatter:  (value) => `Time Step: ${steps - curSteps} <hr /> Original Stock Price: $${price.toFixed(2)} <hr /> New Option Price: $${node.optionPrice.toFixed(2)} <hr /> stock = parent price x (1 +/- up move / 100) <hr /> ${price.toFixed(2)} = parent price x (1 +/- ${(upMove/100).toFixed(2)})`
+        formatter:  (value) => `Time Step: ${steps - curSteps} <hr /> Original Stock Price: $${stockPrice.toFixed(2)} <hr /> Option Price: $${node.optionPrice.toFixed(2)} <hr /> stock = parent price x up move <hr /> ${stockPrice.toFixed(2)} = parent price x ${upMove.toFixed(2)})`
       }
     };
     map[nodeName] = node;
     if (curSteps === 0) {
-      return { nodes: [node], links: [], optionPrice: price };
+      return { nodes: [node], links: [], optionPrice: stockPrice };
     }
-    let upPrice = price * (1+upMove/100);
-    let downPrice = price * (1-downMove/100);
+    let upPrice = stockPrice * (upMove);
+    let downPrice = stockPrice * (downMove);
     let upResult = createGraphData(curSteps - 1, upPrice, id + 1, optionType);
     let downResult = createGraphData(curSteps - 1, downPrice, id - 1, optionType);
     node.optionPrice = upResult.optionPrice*riskNeutralProbability + downResult.optionPrice*(1-riskNeutralProbability)
     node.tooltip = {
-      formatter:  (value) => `Time Step: ${steps - curSteps} <hr /> Original Stock Price: $${price.toFixed(2)} <hr /> New Option Price: $${node.optionPrice.toFixed(2)} <hr /> option = (up * RNP) + (down * RNP) <hr /> ${node.optionPrice.toFixed(2)} = (${upResult.optionPrice.toFixed(2)} x ${riskNeutralProbability.toFixed(2)}) + (${downResult.optionPrice.toFixed(2)} * ${1-riskNeutralProbability.toFixed(2)}) <hr /> <a target="_blank" href="https://www.macroption.com/cox-ross-rubinstein-formulas/">Learn more about this model</a>`
+      formatter:  (value) => `Time Step: ${steps - curSteps} <hr /> Original Stock Price: $${stockPrice.toFixed(2)} <hr /> New Option Price: $${node.optionPrice.toFixed(2)} <hr /> option = (future up * RNP) + (future down * RNP) <hr /> ${node.optionPrice.toFixed(2)} = (${upResult.optionPrice.toFixed(2)} x ${riskNeutralProbability.toFixed(2)}) + (${downResult.optionPrice.toFixed(2)} * ${1-riskNeutralProbability.toFixed(2)}) <hr /> Future stock movements predicted <br /> using the <a target="_blank" href="https://www.macroption.com/cox-ross-rubinstein-formulas/">Cox-Ross-Rubinstein Model</a> <br />` 
     }
     
     let linkToUpChild = { source: node.name, target: upResult.nodes[0]?.name, tooltip: { show: false } };
     let linkToDownChild = { source: node.name, target: downResult.nodes[0]?.name, tooltip: { show: false } };
-    if (upResult.nodes.length == 0) linkToUpChild.target = upResult.name
+    if (upResult.nodes.length === 0) linkToUpChild.target = upResult.name
     return {
       nodes: [node, ...upResult.nodes, ...downResult.nodes],
       links: [linkToUpChild, linkToDownChild, ...upResult.links, ...downResult.links],
-      optionPrice: price
+      optionPrice: stockPrice
     };
   };
 
   const getGraphOption = () => {
+    if (selectedOption === null) return {};
     return {
       tooltip: {
         textStyle: { fontSize: 20 },
         enterable: true,
         confine: true,
         trigger: "item",
-
+        triggerOn: "click",
+        position: [0, 0],
       },
       animationDurationUpdate: 300,
       animationEasingUpdate: 'quinticInOut',
@@ -434,6 +433,7 @@ function Dashboard({
       resetData();
       setResetCount();
     } else {
+      getStockData();
       setSearched(true);
       getOptionsContracts();
     }

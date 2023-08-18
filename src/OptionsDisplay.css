@@ -11,11 +11,17 @@
 .body-scroll-wrapper {
     height: 60vh;
     overflow-y: auto;
+    margin-top: 0.5vh;
 }
 
 .options-display {
     padding: 20px;
     margin: 0 2vw;
+}
+
+#options-display-header {
+    display: flex;
+    justify-content: space-between;
 }
 
 .options-display table {
@@ -49,6 +55,14 @@
 
 .options-display::-webkit-scrollbar-thumb:hover {
     background: #555;  
+}
+
+.options-display tbody tr:nth-child(9n+1) {
+    background-color: #e0e0e0;
+}
+
+.options-display tbody tr:nth-child(9n) {
+    border-bottom: 2px solid #007BFF;
 }
 
 h2 {

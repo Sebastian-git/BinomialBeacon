@@ -2,7 +2,8 @@ import { useNavigate } from 'react-router-dom';
 import React, { useEffect } from 'react';
 import './OptionsDisplay.css';
 
-function OptionsDisplay({optionsContracts, setSelectedOption, resetData}) {
+function OptionsDisplay({optionsContracts, setSelectedOption, resetData, stockTicker, stockPrice }) {
+    
     const navigate = useNavigate();
     useEffect(() => {
         if (Array.isArray(optionsContracts) && optionsContracts.length == 0) {
@@ -13,7 +14,10 @@ function OptionsDisplay({optionsContracts, setSelectedOption, resetData}) {
     return (
         <div>
             <div className="options-display">
-                <h2>Select an Options Contract</h2>
+                <div id="options-display-header">
+                    <h2> Select an Options Contract </h2>
+                    <h2> ({stockTicker} ${stockPrice})  </h2>
+                </div>
                 <div id="table-wrapper">
                     <table>
                         <thead>
