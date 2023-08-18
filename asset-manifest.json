@@ -1,14 +1,14 @@
 {
   "files": {
-    "main.css": "/BinomialBeacon/static/css/main.92d66edf.css",
-    "main.js": "/BinomialBeacon/static/js/main.493a33cb.js",
-    "static/media/wasm_lib_bg.wasm": "/BinomialBeacon/static/media/wasm_lib_bg.2c8d83c11b40bdc3273d.wasm",
+    "main.css": "/BinomialBeacon/static/css/main.39bc1919.css",
+    "main.js": "/BinomialBeacon/static/js/main.6bb10e49.js",
+    "static/media/wasm_lib_bg.wasm": "/BinomialBeacon/static/media/wasm_lib_bg.d33cec324af3591e7dfd.wasm",
     "index.html": "/BinomialBeacon/index.html",
-    "main.92d66edf.css.map": "/BinomialBeacon/static/css/main.92d66edf.css.map",
-    "main.493a33cb.js.map": "/BinomialBeacon/static/js/main.493a33cb.js.map"
+    "main.39bc1919.css.map": "/BinomialBeacon/static/css/main.39bc1919.css.map",
+    "main.6bb10e49.js.map": "/BinomialBeacon/static/js/main.6bb10e49.js.map"
   },
   "entrypoints": [
-    "static/css/main.92d66edf.css",
-    "static/js/main.493a33cb.js"
+    "static/css/main.39bc1919.css",
+    "static/js/main.6bb10e49.js"
   ]
 }
