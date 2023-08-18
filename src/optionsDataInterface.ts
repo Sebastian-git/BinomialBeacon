@@ -59,7 +59,7 @@ class PolygonOptionsData implements OptionsData {
     if (this.stockClosingData) {
       return this.stockClosingData[this.stockClosingData.length - 1]
     } else {
-      console.log(`getStockPrice(${ticker}): FAILED TO FIND STOCK PRICE IN this.stockClosingData`)
+      console.error(`getStockPrice(${ticker}): FAILED TO FIND STOCK PRICE IN this.stockClosingData`)
       try {
         const response = await axios.get(`https://api.polygon.io/v2/aggs/ticker/${ticker}/prev?adjusted=true&apiKey=${process.env.REACT_APP_POLYGON_API_KEY}`)
         if (!response.data) {

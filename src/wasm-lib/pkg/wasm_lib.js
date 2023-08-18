@@ -21,22 +21,22 @@ export function down_size(std_dev, delta_t) {
 }
 
 /**
-* @param {number} cur_price
+* @param {number} underlying_price
 * @param {number} strike_price
 * @returns {number}
 */
-export function call_buy_payoff(cur_price, strike_price) {
-    const ret = wasm.call_buy_payoff(cur_price, strike_price);
+export function call_buy_payoff(underlying_price, strike_price) {
+    const ret = wasm.call_buy_payoff(underlying_price, strike_price);
     return ret;
 }
 
 /**
-* @param {number} cur_price
+* @param {number} underlying_price
 * @param {number} strike_price
 * @returns {number}
 */
-export function put_buy_payoff(cur_price, strike_price) {
-    const ret = wasm.put_buy_payoff(cur_price, strike_price);
+export function put_buy_payoff(underlying_price, strike_price) {
+    const ret = wasm.put_buy_payoff(underlying_price, strike_price);
     return ret;
 }
 

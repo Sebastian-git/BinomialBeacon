@@ -200,7 +200,6 @@ function Dashboard({
     id = 0;
     map = {};
     let graphData = createGraphData(steps, stockPrice, 0, optionType);
-    console.log("graphData:", graphData, riskNeutralProbability)
     graphData.nodes.forEach(node => {
       node.name = node.name.replace(/\n.*$/, '');
       if (node.optionValue <= 0) {
@@ -226,7 +225,6 @@ function Dashboard({
     setDeltaT(newDeltaT) 
     setUpMove(newUpMove);
     setDownMove(newDownMove);
-    console.log(`newUpMove: ${newUpMove}, newDownMove: ${newDownMove}, newDeltaT: ${newDeltaT}`)
     setRiskNeutralProbability(newRNP);
   }
 
@@ -248,7 +246,7 @@ function Dashboard({
       x: (steps - curSteps) * 100 * steps,
       y: -id * 25 * steps,
       tooltip: {
-        formatter:  (value) => `Original Stock Price: $${price.toFixed(2)} <hr /> New Option Price: $${node.optionPrice.toFixed(2)} <hr /> Time Step: ${steps - curSteps}`
+        formatter:  (value) => `Time Step: ${steps - curSteps} <hr /> Original Stock Price: $${price.toFixed(2)} <hr /> New Option Price: $${node.optionPrice.toFixed(2)} <hr /> stock = parent price x (1 +/- up move / 100) <hr /> ${price.toFixed(2)} = parent price x (1 +/- ${(upMove/100).toFixed(2)})`
       }
     };
     map[nodeName] = node;
@@ -261,7 +259,7 @@ function Dashboard({
     let downResult = createGraphData(curSteps - 1, downPrice, id - 1, optionType);
     node.optionPrice = upResult.optionPrice*riskNeutralProbability + downResult.optionPrice*(1-riskNeutralProbability)
     node.tooltip = {
-      formatter:  (value) => `Original Stock Price: $${price.toFixed(2)} <hr /> New Option Price: $${node.optionPrice.toFixed(2)} <hr /> Time Step: ${steps - curSteps} <hr /> option = (up * RNP) + (down * RNP) <hr /> ${node.optionPrice.toFixed(2)} = (${upResult.optionPrice.toFixed(2)} x ${riskNeutralProbability.toFixed(2)}) + (${downResult.optionPrice.toFixed(2)} * ${1-riskNeutralProbability.toFixed(2)})`
+      formatter:  (value) => `Time Step: ${steps - curSteps} <hr /> Original Stock Price: $${price.toFixed(2)} <hr /> New Option Price: $${node.optionPrice.toFixed(2)} <hr /> option = (up * RNP) + (down * RNP) <hr /> ${node.optionPrice.toFixed(2)} = (${upResult.optionPrice.toFixed(2)} x ${riskNeutralProbability.toFixed(2)}) + (${downResult.optionPrice.toFixed(2)} * ${1-riskNeutralProbability.toFixed(2)}) <hr /> <a target="_blank" href="https://www.macroption.com/cox-ross-rubinstein-formulas/">Learn more about this model</a>`
     }
     
     let linkToUpChild = { source: node.name, target: upResult.nodes[0]?.name, tooltip: { show: false } };
@@ -294,7 +292,7 @@ function Dashboard({
           label: {
             show: steps < 15,
             color: "white",
-            fontSize: 18 - Math.min(steps/2, 8),
+            fontSize: steps < 7 ? 16 - Math.min(steps/2, 8) : 22 - Math.min(steps/2, 8),
             position: steps < 7 ? [-60, 35 - (steps)] : [-10, 40 - (steps)],
           },
           edgeSymbol: ['circle', 'arrow'],
@@ -434,6 +432,7 @@ function Dashboard({
     }
     if (searched || dataLoaded) {
       resetData();
+      setResetCount();
     } else {
       setSearched(true);
       getOptionsContracts();

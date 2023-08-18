@@ -13,17 +13,17 @@ export function up_size(std_dev: number, delta_t: number): number;
 */
 export function down_size(std_dev: number, delta_t: number): number;
 /**
-* @param {number} cur_price
+* @param {number} underlying_price
 * @param {number} strike_price
 * @returns {number}
 */
-export function call_buy_payoff(cur_price: number, strike_price: number): number;
+export function call_buy_payoff(underlying_price: number, strike_price: number): number;
 /**
-* @param {number} cur_price
+* @param {number} underlying_price
 * @param {number} strike_price
 * @returns {number}
 */
-export function put_buy_payoff(cur_price: number, strike_price: number): number;
+export function put_buy_payoff(underlying_price: number, strike_price: number): number;
 /**
 * @param {number} rfr
 * @param {number} delta_t
