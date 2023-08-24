@@ -95,7 +95,8 @@ Stuff I'm currently working on:
 - Switching to Leisen-Reimer Model for accuracy
     - need to get stock dividend data (currently setting variable as 0 for all calculations)
     - need to review equations; different probability structure may be causing errors
-    - need to talk more about it in readme, almost like using black scholes model 
+    - need to talk more about it in readme, almost like using black scholes model
+    - WILL LIKELY HAVE TO USE BLACK SCHOLES TO SOLVE FOR IMPLIED VOLATILITY, SINCE THAT API CALL ISN'T OFFERED
 
 Stuff I'd like to add in the future:
 - LinkedIn polls checking which UI is better (with side bar of options chain vs not)
