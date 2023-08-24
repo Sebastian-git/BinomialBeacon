@@ -29,7 +29,7 @@ class PolygonOptionsData implements OptionsData {
       this.stockClosingData = response.data.results.map((result: { c: any; }) => result.c);
       return this.stockClosingData;
     } catch (error) {
-      console.error('API Error fetching daily closing prices: ', error);
+      console.error('getDailyClosingPrices: error fetching daily closing prices: ', error);
     }
     return [];
   }
@@ -46,9 +46,9 @@ class PolygonOptionsData implements OptionsData {
       }
       return response.data.results;
     } catch (error) {
-      console.error('API Error fetching options contracts: ', error);
+      console.error('getOptionsContracts: error fetching options contracts: ', error);
     }
-    console.error('API Error invalid ticker');
+    console.error('getOptionsContracts: invalid ticker');
     return [];
   }
 
@@ -60,15 +60,15 @@ class PolygonOptionsData implements OptionsData {
       }
       return response.data.results[0].c;
     } catch (error) {
-      console.error('API Error fetching option price: ', error);
+      console.error('getOptionPrice: error fetching option price: ', error);
     }
-    console.error('API Error invalid ticker');
+    console.error('getOptionPrice: invalid ticker');
     return -1;
   }
 
   public async getStockPrice(ticker: string): Promise<number> {
     if (ticker.length < 1 || ticker.length > 5) {
-      console.error("API Error invalid ticker symbol");
+      console.error("getStockPrice: error invalid ticker symbol");
     }
     if (this.stockClosingData) {
       return this.stockClosingData[this.stockClosingData.length - 1]
@@ -82,7 +82,7 @@ class PolygonOptionsData implements OptionsData {
         this.stockData = response.data;
         return this.stockData.results[0].c;
       } catch (error) {
-        console.error('API Error fetching stock data: ', error);
+        console.error('getStockPrice: error fetching stock data: ', error);
       }
     }
     return 0;
@@ -99,7 +99,7 @@ class PolygonOptionsData implements OptionsData {
       let standardDeviation = Math.sqrt(variance);
       return standardDeviation;
     } catch (error) {
-      console.error('Error calculating standard deviation: ', error);
+      console.error('getStandardDeviation: error calculating standard deviation: ', error);
     }
     return 0;
   }
@@ -114,7 +114,7 @@ class PolygonOptionsData implements OptionsData {
         const riskFreeRate = parseFloat(latestData.avg_interest_rate_amt);
         return riskFreeRate;
     } catch (error) {
-        console.error('API Error fetching risk free rate: ', error);
+        console.error('getRiskFreeRate: error fetching risk free rate: ', error);
         return 0.04;
     }
     return 0;

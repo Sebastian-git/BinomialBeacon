@@ -14,7 +14,7 @@ pub fn d_two(d_one: f64, volatility: f64, tte: f64) -> f64 {
 
 #[wasm_bindgen]
 pub fn peizer_pratt_inversion(z: f64, steps: f64) -> f64 {
-    1.0/2.0 + z.sin()/2.0 * ( 1.0 - (-1.0 * ( z / (steps + 1.0/3.0 + 0.1/(steps+1.0)) ).powf(2.0) * (steps + 1.0/6.0)).exp() ).sqrt()
+    1.0/2.0 + z.signum()/2.0 * ( 1.0 - (-1.0 * ( z / (steps + 1.0/3.0 + 0.1/(steps+1.0)) ).powf(2.0) * (steps + 1.0/6.0)).exp() ).sqrt()
 }
 
 // h^-1( d2 )
