@@ -52,6 +52,20 @@ class PolygonOptionsData implements OptionsData {
     return [];
   }
 
+  public async getOptionPrice(ticker: string): Promise<number> {
+    try {
+      const response = await axios.get(`https://api.polygon.io/v2/aggs/ticker/${ticker}/prev?adjusted=true&apiKey=${process.env.REACT_APP_POLYGON_API_KEY}`)
+      if (!response.data || !response.data.results) {
+        throw new Error('Invalid response data');
+      }
+      return response.data.results[0].c;
+    } catch (error) {
+      console.error('API Error fetching option price: ', error);
+    }
+    console.error('API Error invalid ticker');
+    return -1;
+  }
+
   public async getStockPrice(ticker: string): Promise<number> {
     if (ticker.length < 1 || ticker.length > 5) {
       console.error("API Error invalid ticker symbol");
@@ -101,6 +115,7 @@ class PolygonOptionsData implements OptionsData {
         return riskFreeRate;
     } catch (error) {
         console.error('API Error fetching risk free rate: ', error);
+        return 0.04;
     }
     return 0;
   }

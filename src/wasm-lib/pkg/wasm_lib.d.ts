@@ -1,6 +1,83 @@
 /* tslint:disable */
 /* eslint-disable */
 /**
+* @param {number} stock_price
+* @param {number} strike_price
+* @param {number} tte
+* @param {number} rfr
+* @param {number} div_yield
+* @param {number} volatility
+* @returns {number}
+*/
+export function d_one(stock_price: number, strike_price: number, tte: number, rfr: number, div_yield: number, volatility: number): number;
+/**
+* @param {number} d_one
+* @param {number} volatility
+* @param {number} tte
+* @returns {number}
+*/
+export function d_two(d_one: number, volatility: number, tte: number): number;
+/**
+* @param {number} z
+* @param {number} steps
+* @returns {number}
+*/
+export function peizer_pratt_inversion(z: number, steps: number): number;
+/**
+* @param {number} stock_price
+* @param {number} strike_price
+* @param {number} tte
+* @param {number} rfr
+* @param {number} div_yield
+* @param {number} volatility
+* @param {number} steps
+* @returns {number}
+*/
+export function get_up_move_probability(stock_price: number, strike_price: number, tte: number, rfr: number, div_yield: number, volatility: number, steps: number): number;
+/**
+* @param {number} stock_price
+* @param {number} strike_price
+* @param {number} tte
+* @param {number} rfr
+* @param {number} div_yield
+* @param {number} volatility
+* @param {number} steps
+* @returns {number}
+*/
+export function get_up_move_probability_prime(stock_price: number, strike_price: number, tte: number, rfr: number, div_yield: number, volatility: number, steps: number): number;
+/**
+* @param {number} up_move_probability
+* @returns {number}
+*/
+export function get_down_move_probability(up_move_probability: number): number;
+/**
+* @param {number} up_move_probability_prime
+* @returns {number}
+*/
+export function get_down_move_probability_prime(up_move_probability_prime: number): number;
+/**
+* @param {number} stock_price
+* @param {number} strike_price
+* @param {number} tte
+* @param {number} rfr
+* @param {number} div_yield
+* @param {number} volatility
+* @param {number} steps
+* @returns {number}
+*/
+export function get_up_move_size(stock_price: number, strike_price: number, tte: number, rfr: number, div_yield: number, volatility: number, steps: number): number;
+/**
+* @param {number} stock_price
+* @param {number} strike_price
+* @param {number} tte
+* @param {number} rfr
+* @param {number} div_yield
+* @param {number} volatility
+* @param {number} steps
+* @returns {number}
+*/
+export function get_down_move_size(stock_price: number, strike_price: number, tte: number, rfr: number, div_yield: number, volatility: number, steps: number): number;
+/**
 * @param {number} std_dev
 * @param {number} delta_t
 * @returns {number}
@@ -37,11 +114,20 @@ export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembl
 
 export interface InitOutput {
   readonly memory: WebAssembly.Memory;
+  readonly d_one: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
+  readonly d_two: (a: number, b: number, c: number) => number;
+  readonly peizer_pratt_inversion: (a: number, b: number) => number;
+  readonly get_up_move_probability: (a: number, b: number, c: number, d: number, e: number, f: number, g: number) => number;
+  readonly get_up_move_probability_prime: (a: number, b: number, c: number, d: number, e: number, f: number, g: number) => number;
+  readonly get_down_move_probability: (a: number) => number;
+  readonly get_up_move_size: (a: number, b: number, c: number, d: number, e: number, f: number, g: number) => number;
+  readonly get_down_move_size: (a: number, b: number, c: number, d: number, e: number, f: number, g: number) => number;
   readonly up_size: (a: number, b: number) => number;
   readonly down_size: (a: number, b: number) => number;
   readonly call_buy_payoff: (a: number, b: number) => number;
   readonly put_buy_payoff: (a: number, b: number) => number;
   readonly get_rnp: (a: number, b: number, c: number, d: number) => number;
+  readonly get_down_move_probability_prime: (a: number) => number;
 }
 
 export type SyncInitInput = BufferSource | WebAssembly.Module;

@@ -1,4 +1,5 @@
-import { up_size, down_size, call_buy_payoff, put_buy_payoff, get_rnp } from "./wasm-lib/pkg";
+import { up_size, down_size, call_buy_payoff, put_buy_payoff, get_rnp, 
+        get_up_move_size, get_down_move_size, get_up_move_probability, get_down_move_probability } from "./wasm-lib/pkg";
 import { BrowserRouter as Router, Route, Routes, useNavigate, useLocation } from 'react-router-dom';
 import { faArrowsToEye } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -9,7 +10,7 @@ import ReactECharts from 'echarts-for-react';
 import Navbar from './Navbar';
 import './App.css';
 
-const TOTAL_STEPS = 20;
+const TOTAL_STEPS = 21;
 const POLYGON_OPTIONS_DATA = new PolygonOptionsData();
 
 function App() {
@@ -39,8 +40,9 @@ function useLocalStorageState(key, defaultValue) {
 function MainApp() {
   const [optionsContracts, setOptionsContracts] = useLocalStorageState('optionsContracts', []);
   const [selectedOption, setSelectedOption] = useLocalStorageState('selectedOption', null);
-  const [timeToExpiration, setTimeToExpiration] = useLocalStorageState("totalTime", 1);
+  const [timeToExpiration, setTimeToExpiration] = useLocalStorageState("totalTime", 1); // in years
   const [strikePrice, setStrikePrice] = useLocalStorageState('strikePrice', 100);
+  const [optionPrice, setOptionPrice] = useLocalStorageState('optionPrice', 100);
   const [stockTicker, setStockTicker] = useLocalStorageState("stockTicker", "");
   const [dataLoaded, setDataLoaded] = useLocalStorageState("dataLoaded", false);
   const [stockPrice, setStockPrice] = useLocalStorageState("stockPrice", 100);
@@ -55,10 +57,11 @@ function MainApp() {
     setOptionType("call");
     setDataLoaded(false);
     setStrikePrice(100);
+    setOptionPrice(100);
     setSearched(false);
     setStockTicker("");
     setStockPrice(100);
-    setStdDev(19);
+    setStdDev(0.19);
     setSteps(1);
     localStorage.removeItem("optionsContracts");
     localStorage.removeItem("timeToExpiration");
@@ -107,6 +110,8 @@ function MainApp() {
           setStockPrice={setStockPrice} 
           strikePrice={strikePrice} 
           setStrikePrice={setStrikePrice}
+          optionPrice={optionPrice}
+          setOptionPrice={setOptionPrice}
           resetData={resetData}
           optionType={optionType}
           setOptionType={setOptionType}
@@ -140,6 +145,8 @@ function Dashboard({
   setStockPrice, 
   strikePrice, 
   setStrikePrice,
+  optionPrice,
+  setOptionPrice,
   resetData,
   optionType,
   setOptionType,
@@ -159,8 +166,10 @@ function Dashboard({
   const [centerGraphTooltip, setCenterGraphTooltip] = useState(false);
   const [invalidStockTooltip, setInvalidStockTooltip] = useState(false);
   const [deltaT, setDeltaT] =  useState(steps / steps);
-  const [downMove, setDownMove] = useState(() => down_size(stdDev, deltaT));
-  const [upMove, setUpMove] = useState(() => up_size(stdDev, deltaT));
+  const [upMove, setUpMove] = useState(() => get_up_move_size(stockPrice, strikePrice, timeToExpiration, RFR, 0.02, stdDev, steps));
+  const [upProb, setUpProb] = useState(() => get_up_move_probability(stockPrice, strikePrice, timeToExpiration, RFR, 0.02, stdDev, steps));
+  const [downMove, setDownMove] = useState(() => get_down_move_size(stockPrice, strikePrice, timeToExpiration, RFR, 0.02, stdDev, steps));
+  const [downProb, setDownProb] = useState(() => get_down_move_probability(upProb));
   const [resetCount, setResetCount] = useState(0);
   const echartRef = useRef(null);
   const navigate = useNavigate();
@@ -181,6 +190,7 @@ function Dashboard({
   useEffect(() => {
     if (selectedOption) {
       setStrikePrice(selectedOption.strikePrice);
+      getOptionPrice(selectedOption.ticker);
       if (searched) {
         getRFR();
         getTimeToExpiration();
@@ -200,13 +210,13 @@ function Dashboard({
     let graphData = createGraphData(steps, stockPrice, 0, optionType);
     graphData.nodes.forEach(node => {
       node.name = node.name.replace(/\n.*$/, '');
-      if (node.optionValue <= 0) {
+      if ((node.optionValue < optionPrice && optionType == "call") || (node.optionValue > optionPrice && optionType == "put")) {
         node.itemStyle = { color: 'red'}
       } else {
         node.itemStyle = { color: 'green'}
       }
-      if (steps < 7)  node.name = `Stock Price: $${node.name}\nOption Price: $${node.optionPrice.toFixed(2)}`
-      else if (steps < 15) node.name = `$${node.optionPrice.toFixed(2)}`
+      if (steps < 7)  node.name = `Stock Price: $${node.stockPrice.toFixed(2)}\nOption Price: $${node.optionPrice.toFixed(2)}`
+      else node.name = `$${node.optionValue.toFixed(2)}`
     });
     setNodes(graphData.nodes);
     setLinks(graphData.links);
@@ -216,47 +226,75 @@ function Dashboard({
     id = 0;
     map = {};
     let newDeltaT = (timeToExpiration / timeSteps) || 1;
-    let newUpMove = up_size(stdDev, newDeltaT);
-    let newDownMove = down_size(stdDev, newDeltaT);
+    let newUpMove = get_up_move_size(stockPrice, strikePrice, timeToExpiration, RFR, 0.02, stdDev, steps);
+    let newUpMoveProb = get_up_move_probability(stockPrice, strikePrice, timeToExpiration, RFR, 0.02, stdDev, steps)
+    let newDownMove = get_down_move_size(stockPrice, strikePrice, timeToExpiration, RFR, 0.02, stdDev, steps);
+    let newDownMoveProb = get_down_move_probability(newUpMoveProb);
     let newRNP = get_rnp(RFR, newDeltaT, newUpMove, newDownMove)
     setSteps(timeSteps);
     setDeltaT(newDeltaT); 
     setUpMove(newUpMove);
+    setUpProb(newUpMoveProb);
     setDownMove(newDownMove);
+    setDownProb(newDownMoveProb)
     setRiskNeutralProbability(newRNP);
-    setResetCount(resetCount + 1)
+    setResetCount(resetCount + 1);
   }
 
   const createGraphData = (curSteps, stockPrice, id = 0, optionType) => {
     let payoff;
     if (optionType === "call") payoff = call_buy_payoff(stockPrice, strikePrice);
     else if (optionType === "put") payoff = put_buy_payoff(stockPrice, strikePrice);
+
     let optionValue = payoff;
-    let nodeName = `${stockPrice.toFixed(2)} \n${curSteps}-${id}`;
-    if (map[nodeName]) return { nodes: [], links: [], name: nodeName, optionPrice: stockPrice };
+    let nodeName = `${optionValue.toFixed(2)} \n${curSteps}-${id}`;
+    if (map[nodeName]) return { nodes: [], links: [], name: nodeName, optionPrice: stockPrice, optionValue: optionValue, stockPrice: stockPrice };
     let node = {
       name: nodeName,
       value: "this is the value",
       id: nodeName,
+      stockPrice: stockPrice,
+      optionPrice: optionValue,
       optionValue: optionValue, 
-      optionPrice: stockPrice,
       x: (steps - curSteps) * 100 * steps,
       y: -id * 25 * steps,
       tooltip: {
-        formatter:  (value) => `Time Step: ${steps - curSteps} <hr /> Original Stock Price: $${stockPrice.toFixed(2)} <hr /> Option Price: $${node.optionPrice.toFixed(2)} <hr /> stock = parent price x up move <hr /> ${stockPrice.toFixed(2)} = parent price x ${upMove.toFixed(2)})`
+        formatter:  (value) => `Time Step: ${steps - curSteps} <hr /> 
+        Original Stock Price: $${stockPrice.toFixed(2)} <hr /> 
+        New Option Value: $${node.optionPrice.toFixed(2)} <hr /> 
+        <hr /> stock = parent price x up move <hr /> 
+        ${stockPrice.toFixed(2)} = parent price x ${upMove.toFixed(2)})
+        <br />
+        ` 
       }
     };
     map[nodeName] = node;
+    // Option values / payoff found from last column of underlying price tree are option prices
     if (curSteps === 0) {
-      return { nodes: [node], links: [], optionPrice: stockPrice };
+      return { nodes: [node], links: [], optionPrice: optionValue, optionValue: optionValue, stockPrice: stockPrice };
     }
-    let upPrice = stockPrice * (upMove);
-    let downPrice = stockPrice * (downMove);
+
+    // Stock's up & down prices
+    let upPrice = (stockPrice * upMove);
+    let downPrice = (stockPrice * downMove);
+
+    // Up and down nodes containing new stock prices & option values
     let upResult = createGraphData(curSteps - 1, upPrice, id + 1, optionType);
     let downResult = createGraphData(curSteps - 1, downPrice, id - 1, optionType);
-    node.optionPrice = upResult.optionPrice*riskNeutralProbability + downResult.optionPrice*(1-riskNeutralProbability)
+
+    node.optionPrice = upResult.optionValue*upProb + downResult.optionValue*downProb
+    node.optionValue = upResult.optionValue*upProb + downResult.optionValue*downProb
+
     node.tooltip = {
-      formatter:  (value) => `Time Step: ${steps - curSteps} <hr /> Original Stock Price: $${stockPrice.toFixed(2)} <hr /> New Option Price: $${node.optionPrice.toFixed(2)} <hr /> option = (future up * RNP) + (future down * RNP) <hr /> ${node.optionPrice.toFixed(2)} = (${upResult.optionPrice.toFixed(2)} x ${riskNeutralProbability.toFixed(2)}) + (${downResult.optionPrice.toFixed(2)} * ${1-riskNeutralProbability.toFixed(2)}) <hr /> Future stock movements predicted <br /> using the <a target="_blank" href="https://www.macroption.com/cox-ross-rubinstein-formulas/">Cox-Ross-Rubinstein Model</a> <br />` 
+      formatter:  (value) => `Time Step: ${steps - curSteps} <hr /> 
+      Original Stock Price: $${stockPrice.toFixed(2)} <hr /> 
+      New Option Value: $${node.optionPrice.toFixed(2)} <hr /> 
+      option = (future up * probability) + (future down * probability) <hr /> 
+      ${node.optionPrice.toFixed(4)} = (${upResult.optionPrice.toFixed(4)} x ${upProb.toFixed(4)}) + (${downResult.optionPrice.toFixed(4)} * ${downProb.toFixed(4)}) <hr /> 
+      Future stock movements predicted <br /> 
+      using the <a target="_blank" href="https://www.macroption.com/leisen-reimer-formulas/">Leisen-Reimer Model</a> <br />
+      <br />
+      ` 
     }
     
     let linkToUpChild = { source: node.name, target: upResult.nodes[0]?.name, tooltip: { show: false } };
@@ -265,7 +303,9 @@ function Dashboard({
     return {
       nodes: [node, ...upResult.nodes, ...downResult.nodes],
       links: [linkToUpChild, linkToDownChild, ...upResult.links, ...downResult.links],
-      optionPrice: stockPrice
+      optionPrice: node.optionPrice,
+      optionValue: node.optionPrice,
+      stockPrice: stockPrice
     };
   };
 
@@ -383,10 +423,16 @@ function Dashboard({
     await POLYGON_OPTIONS_DATA.getDailyClosingPrices(stockTicker);
     let newPrice = await POLYGON_OPTIONS_DATA.getStockPrice(stockTicker)
     let newStdDev = await POLYGON_OPTIONS_DATA.getStandardDeviation(stockTicker)
-    setStdDev(newStdDev.toFixed(2), 4)
+    setStdDev(newStdDev.toFixed(4) / 100)
+    // setStdDev(0.6475)
     setStockPrice(newPrice)
     setDataLoaded(true);
   };
+
+  const getOptionPrice = async (ticker) => {
+    let newOptionPrice = await POLYGON_OPTIONS_DATA.getOptionPrice(ticker);
+    setOptionPrice(newOptionPrice)
+  }
   
   const getOptionsContracts = async () => {
     let options = await POLYGON_OPTIONS_DATA.getOptionsContracts({
@@ -446,7 +492,7 @@ function Dashboard({
   return (
     <div className="app-wrapper">
       <div className="chart-wrapper">
-        {dataLoaded && (
+        {dataLoaded && selectedOption && (
           <div id="stats-wrapper">
           <div className="stats-item">
             <label className="stats-name">Stock Ticker</label>
@@ -456,15 +502,17 @@ function Dashboard({
               <label className="stats-name">Stock Price</label>
               <p className="stats-value">{stockPrice}</p>
             </div>
-      
             <div className="stats-item">
               <label className="stats-name">Strike Price</label>
               <p className="stats-value">{strikePrice}</p>
             </div>
-      
             <div className="stats-item">
-              <label className="stats-name">Standard Deviation</label>
-              <p className="stats-value">{stdDev}</p>
+              <label className="stats-name">Option Price</label>
+              <p className="stats-value">{optionPrice}</p>
+            </div>
+            <div className="stats-item">
+              <label className="stats-name">Volatility</label>
+              <p className="stats-value">{stdDev.toFixed(2)}</p>
             </div>
           </div>
         )}
@@ -503,9 +551,15 @@ function Dashboard({
           {dataLoaded && (
             <div id="timestep-control-input">
               <p>Timesteps = {steps} </p>
-              <input type="range" min="1" max={TOTAL_STEPS} value={steps}
-                onChange={(e) => updateTimeStep(Number(e.target.value))} />
+              <input 
+                type="range" 
+                min="1" 
+                max={(TOTAL_STEPS + 1) / 2} 
+                value={(steps + 1) / 2}  // convert steps to match the range's scale
+                onChange={(e) => updateTimeStep((Number(e.target.value) * 2) - 1)}  // convert the range value to the corresponding odd value
+              />
             </div>
+          
           )}
           <div className="form-item">
             <button className="btn-search" type="submit">{dataLoaded ? 'Reset' : 'Search'}</button>

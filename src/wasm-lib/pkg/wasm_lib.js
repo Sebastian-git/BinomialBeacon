@@ -1,6 +1,119 @@
 let wasm;
 
 /**
+* @param {number} stock_price
+* @param {number} strike_price
+* @param {number} tte
+* @param {number} rfr
+* @param {number} div_yield
+* @param {number} volatility
+* @returns {number}
+*/
+export function d_one(stock_price, strike_price, tte, rfr, div_yield, volatility) {
+    const ret = wasm.d_one(stock_price, strike_price, tte, rfr, div_yield, volatility);
+    return ret;
+}
+
+/**
+* @param {number} d_one
+* @param {number} volatility
+* @param {number} tte
+* @returns {number}
+*/
+export function d_two(d_one, volatility, tte) {
+    const ret = wasm.d_two(d_one, volatility, tte);
+    return ret;
+}
+
+/**
+* @param {number} z
+* @param {number} steps
+* @returns {number}
+*/
+export function peizer_pratt_inversion(z, steps) {
+    const ret = wasm.peizer_pratt_inversion(z, steps);
+    return ret;
+}
+
+/**
+* @param {number} stock_price
+* @param {number} strike_price
+* @param {number} tte
+* @param {number} rfr
+* @param {number} div_yield
+* @param {number} volatility
+* @param {number} steps
+* @returns {number}
+*/
+export function get_up_move_probability(stock_price, strike_price, tte, rfr, div_yield, volatility, steps) {
+    const ret = wasm.get_up_move_probability(stock_price, strike_price, tte, rfr, div_yield, volatility, steps);
+    return ret;
+}
+
+/**
+* @param {number} stock_price
+* @param {number} strike_price
+* @param {number} tte
+* @param {number} rfr
+* @param {number} div_yield
+* @param {number} volatility
+* @param {number} steps
+* @returns {number}
+*/
+export function get_up_move_probability_prime(stock_price, strike_price, tte, rfr, div_yield, volatility, steps) {
+    const ret = wasm.get_up_move_probability_prime(stock_price, strike_price, tte, rfr, div_yield, volatility, steps);
+    return ret;
+}
+
+/**
+* @param {number} up_move_probability
+* @returns {number}
+*/
+export function get_down_move_probability(up_move_probability) {
+    const ret = wasm.get_down_move_probability(up_move_probability);
+    return ret;
+}
+
+/**
+* @param {number} up_move_probability_prime
+* @returns {number}
+*/
+export function get_down_move_probability_prime(up_move_probability_prime) {
+    const ret = wasm.get_down_move_probability(up_move_probability_prime);
+    return ret;
+}
+
+/**
+* @param {number} stock_price
+* @param {number} strike_price
+* @param {number} tte
+* @param {number} rfr
+* @param {number} div_yield
+* @param {number} volatility
+* @param {number} steps
+* @returns {number}
+*/
+export function get_up_move_size(stock_price, strike_price, tte, rfr, div_yield, volatility, steps) {
+    const ret = wasm.get_up_move_size(stock_price, strike_price, tte, rfr, div_yield, volatility, steps);
+    return ret;
+}
+
+/**
+* @param {number} stock_price
+* @param {number} strike_price
+* @param {number} tte
+* @param {number} rfr
+* @param {number} div_yield
+* @param {number} volatility
+* @param {number} steps
+* @returns {number}
+*/
+export function get_down_move_size(stock_price, strike_price, tte, rfr, div_yield, volatility, steps) {
+    const ret = wasm.get_down_move_size(stock_price, strike_price, tte, rfr, div_yield, volatility, steps);
+    return ret;
+}
+
+/**
 * @param {number} std_dev
 * @param {number} delta_t
 * @returns {number}

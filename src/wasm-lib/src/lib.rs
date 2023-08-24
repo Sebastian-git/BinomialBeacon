@@ -1,5 +1,58 @@
 use wasm_bindgen::prelude::*;
 
+// Leisen-Reimer Model Formulas
+
+#[wasm_bindgen]
+pub fn d_one(stock_price: f64, strike_price: f64, tte: f64, rfr: f64, div_yield: f64, volatility: f64) -> f64 {
+    ((stock_price / strike_price).ln() + (tte * (rfr - div_yield + volatility.powf(2.0) / 2.0))) / (volatility * tte.sqrt())
+}
+
+#[wasm_bindgen]
+pub fn d_two(d_one: f64, volatility: f64, tte: f64) -> f64 {
+    d_one - volatility * tte.sqrt()
+}
+
+#[wasm_bindgen]
+pub fn peizer_pratt_inversion(z: f64, steps: f64) -> f64 {
+    1.0/2.0 + z.sin()/2.0 * ( 1.0 - (-1.0 * ( z / (steps + 1.0/3.0 + 0.1/(steps+1.0)) ).powf(2.0) * (steps + 1.0/6.0)).exp() ).sqrt()
+}
+
+// h^-1( d2 )
+#[wasm_bindgen]
+pub fn get_up_move_probability(stock_price: f64, strike_price: f64, tte: f64, rfr: f64, div_yield: f64, volatility: f64, steps: f64) -> f64 {
+    peizer_pratt_inversion(d_two(d_one(stock_price, strike_price, tte, rfr, div_yield, volatility), volatility, tte), steps)
+}
+
+// h^-1( d1 )
+#[wasm_bindgen]
+pub fn get_up_move_probability_prime(stock_price: f64, strike_price: f64, tte: f64, rfr: f64, div_yield: f64, volatility: f64, steps: f64) -> f64 {
+    peizer_pratt_inversion(d_one(stock_price, strike_price, tte, rfr, div_yield, volatility), steps)
+}
+
+#[wasm_bindgen]
+pub fn get_down_move_probability(up_move_probability: f64) -> f64 {
+    1.0 - up_move_probability
+}
+
+#[wasm_bindgen]
+pub fn get_down_move_probability_prime(up_move_probability_prime: f64) -> f64 {
+    1.0 - up_move_probability_prime
+}
+
+#[wasm_bindgen]
+pub fn get_up_move_size(stock_price: f64, strike_price: f64, tte: f64, rfr: f64, div_yield: f64, volatility: f64, steps: f64) -> f64 {
+   ( (rfr - div_yield) * (tte / steps) ).exp() * get_up_move_probability_prime(stock_price, strike_price, tte, rfr, div_yield, volatility, steps) / get_up_move_probability(stock_price, strike_price, tte, rfr, div_yield, volatility, steps)
+}
+
+#[wasm_bindgen]
+pub fn get_down_move_size(stock_price: f64, strike_price: f64, tte: f64, rfr: f64, div_yield: f64, volatility: f64, steps: f64) -> f64 {
+    ( (rfr - div_yield) * (tte / steps) ).exp() * get_down_move_probability_prime(get_up_move_probability_prime(stock_price, strike_price, tte, rfr, div_yield, volatility, steps)) /  get_down_move_probability(get_up_move_probability(stock_price, strike_price, tte, rfr, div_yield, volatility, steps))
+}
+
+
+
+// Cox-Ross-Rubinstein Model Formulas
+
 #[wasm_bindgen]
 pub fn up_size(std_dev: f64, delta_t: f64) -> f64 {
     (std_dev * delta_t.sqrt()).exp()
