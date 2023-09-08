@@ -39,6 +39,8 @@ This project was built on a variety of technologies, with each offering its uniq
 ### React
 The core library used for building the UI. After experimenting with several other libraries, I created the visualizations with [React ECharts](https://github.com/hustcc/echarts-for-react), a React wrapper for [Apache ECharts](https://echarts.apache.org/examples/en/index.html).
 
+CODE SNIPPET OF "createGraphData" function. Explain how this is the main function with recursive complexity that essentially handles the entire logic behind the binomial model, with the logic generating every node which is displayed. Mention difficulty in back-links from children to parents due to recursive nature & how you overcame the challenge. 
+
 ### TypeScript
 To develop a custom interface with an emphasis on type safety, enabling efficient switches between different options pricing API's for the live data. This search took so long because most finance API's don't provide an option's strike price, a critical variable in the equation. After experimenting with over 5 different API's, I was sure that the [Polygon API](https://polygon.io/docs/options/get_v3_reference_options_contracts) was the best choice for the project.
 
@@ -55,12 +57,20 @@ interface OptionsData {
 
 ### Rust
 This performant and reliable language was used to optimize all computational functions for the application. The computation necessary for this recursive model seems fit for a language with a run time speed often outranking historically fast languages like C.
+<hr />
+
+ADD CODE SNIPPET FOR IMPLIED VOLATILITY DERIVATION USING BLACK SCHOLES
 
 ### WebAssembly
 My project values the portability of a website more than the performance of a pure Rust application. Integrating Rust into an existing React application and having it work harmoniously with WebAssembly was a significant challenge.
 
 ### GitHub Pages & Actions
 To avoid manually compiling & linking Rust code to the rest of the project, a [Github workflow](https://docs.github.com/en/actions/using-workflows) was configured to automate deployment to Github Pages. Live hosting presented several challenges like adding [environment secrets](https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment#environment-secrets) for the API keys, learning about an entirely new [workflow syntax](https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions), and finally [triggering workflows](https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows) on each push to main for continuous deployment.
+
+<hr />
+ADD CODE SNIPPET OF PORTIONS OF ACTION THAT COMPILE & DEPLOY CODE
+
+### Other
 
 A noteworthy implementation detail is the algorithm to select relevant option contracts. The typescript API only fetches a large set of option contracts, so this algorithm must calculate the mean strike price, then select the next 4 strike prices every half standard deviation, ensuring the user gets the most relevant results.
 
