@@ -9,6 +9,8 @@ export function get_up_move_probability_prime(a: number, b: number, c: number, d
 export function get_down_move_probability(a: number): number;
 export function get_up_move_size(a: number, b: number, c: number, d: number, e: number, f: number, g: number): number;
 export function get_down_move_size(a: number, b: number, c: number, d: number, e: number, f: number, g: number): number;
+export function get_phi(a: number): number;
+export function get_vega(a: number, b: number, c: number, d: number): number;
 export function up_size(a: number, b: number): number;
 export function down_size(a: number, b: number): number;
 export function call_buy_payoff(a: number, b: number): number;

@@ -51,6 +51,25 @@ pub fn get_down_move_size(stock_price: f64, strike_price: f64, tte: f64, rfr: f6
 
 
 
+/* 
+Vega measures options contract premium sensitivity
+
+"How much does a 1% change in the implied volatility affect an option’s market price?"
+https://www.quora.com/What-is-formula-to-calculate-implied-volatility
+*/
+
+#[wasm_bindgen]
+pub fn get_phi(x: f64) -> f64 {
+    1.0 / (x.powf(2.0) / 2.0).exp() / (2.0 * std::f64::consts::PI).sqrt()
+}
+
+#[wasm_bindgen]
+pub fn get_vega(stock_price: f64, tte: f64, div_yield: f64, d_one: f64) -> f64 {
+    stock_price * ( 1.0 / (tte * div_yield).exp() ) * get_phi(d_one) * tte.sqrt()
+}
+
+
+
 // Cox-Ross-Rubinstein Model Formulas
 
 #[wasm_bindgen]

@@ -114,6 +114,27 @@ export function get_down_move_size(stock_price, strike_price, tte, rfr, div_yiel
 }
 
 /**
+* @param {number} x
+* @returns {number}
+*/
+export function get_phi(x) {
+    const ret = wasm.get_phi(x);
+    return ret;
+}
+
+/**
+* @param {number} stock_price
+* @param {number} tte
+* @param {number} div_yield
+* @param {number} d_one
+* @returns {number}
+*/
+export function get_vega(stock_price, tte, div_yield, d_one) {
+    const ret = wasm.get_vega(stock_price, tte, div_yield, d_one);
+    return ret;
+}
+
+/**
 * @param {number} std_dev
 * @param {number} delta_t
 * @returns {number}

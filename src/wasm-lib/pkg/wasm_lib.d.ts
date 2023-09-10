@@ -78,6 +78,19 @@ export function get_up_move_size(stock_price: number, strike_price: number, tte:
 */
 export function get_down_move_size(stock_price: number, strike_price: number, tte: number, rfr: number, div_yield: number, volatility: number, steps: number): number;
 /**
+* @param {number} x
+* @returns {number}
+*/
+export function get_phi(x: number): number;
+/**
+* @param {number} stock_price
+* @param {number} tte
+* @param {number} div_yield
+* @param {number} d_one
+* @returns {number}
+*/
+export function get_vega(stock_price: number, tte: number, div_yield: number, d_one: number): number;
+/**
 * @param {number} std_dev
 * @param {number} delta_t
 * @returns {number}
@@ -122,6 +135,8 @@ export interface InitOutput {
   readonly get_down_move_probability: (a: number) => number;
   readonly get_up_move_size: (a: number, b: number, c: number, d: number, e: number, f: number, g: number) => number;
   readonly get_down_move_size: (a: number, b: number, c: number, d: number, e: number, f: number, g: number) => number;
+  readonly get_phi: (a: number) => number;
+  readonly get_vega: (a: number, b: number, c: number, d: number) => number;
   readonly up_size: (a: number, b: number) => number;
   readonly down_size: (a: number, b: number) => number;
   readonly call_buy_payoff: (a: number, b: number) => number;

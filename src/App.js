@@ -1,5 +1,6 @@
 import { up_size, down_size, call_buy_payoff, put_buy_payoff, get_rnp, 
-        get_up_move_size, get_down_move_size, get_up_move_probability, get_down_move_probability } from "./wasm-lib/pkg";
+        get_up_move_size, get_down_move_size, get_up_move_probability, get_down_move_probability,
+        d_one, get_vega } from "./wasm-lib/pkg";
 import { BrowserRouter as Router, Route, Routes, useNavigate, useLocation } from 'react-router-dom';
 import { faArrowsToEye } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -9,6 +10,7 @@ import OptionsDisplay from './OptionsDisplay';
 import ReactECharts from 'echarts-for-react';
 import Navbar from './Navbar';
 import './App.css';
+import { time } from "echarts";
 
 const TOTAL_STEPS = 21;
 const POLYGON_OPTIONS_DATA = new PolygonOptionsData();
@@ -46,6 +48,7 @@ function MainApp() {
   const [stockTicker, setStockTicker] = useLocalStorageState("stockTicker", "");
   const [dataLoaded, setDataLoaded] = useLocalStorageState("dataLoaded", false);
   const [stockPrice, setStockPrice] = useLocalStorageState("stockPrice", 100);
+  const [volatility, setVolatility] = useLocalStorageState('volatility', 0.19);
   const [stdDev, setStdDev] = useLocalStorageState('stdDev', 19);
   const [steps, setSteps] = useLocalStorageState('steps', 1);
   const [RFR, setRFR] = useLocalStorageState("RFR", 0.05);
@@ -58,6 +61,7 @@ function MainApp() {
     setDataLoaded(false);
     setStrikePrice(100);
     setOptionPrice(100);
+    setVolatility(0.19);
     setSearched(false);
     setStockTicker("");
     setStockPrice(100);
@@ -70,6 +74,7 @@ function MainApp() {
     localStorage.removeItem("strikePrice");
     localStorage.removeItem("dataLoaded");
     localStorage.removeItem("stockPrice");
+    localStorage.removeItem("volatility");
     localStorage.removeItem("stdDev");
     localStorage.removeItem("steps");
     localStorage.removeItem("RFR");
@@ -117,6 +122,8 @@ function MainApp() {
           setOptionType={setOptionType}
           dataLoaded={dataLoaded}
           setDataLoaded={setDataLoaded}
+          volatility={volatility}
+          setVolatility={setVolatility}
           stdDev={stdDev}
           setStdDev={setStdDev}
           steps={steps}
@@ -152,6 +159,8 @@ function Dashboard({
   setOptionType,
   dataLoaded,
   setDataLoaded,
+  volatility,
+  setVolatility,
   stdDev,
   setStdDev,
   steps,
@@ -166,9 +175,9 @@ function Dashboard({
   const [centerGraphTooltip, setCenterGraphTooltip] = useState(false);
   const [invalidStockTooltip, setInvalidStockTooltip] = useState(false);
   const [deltaT, setDeltaT] =  useState(steps / steps);
-  const [upMove, setUpMove] = useState(() => get_up_move_size(stockPrice, strikePrice, timeToExpiration, RFR, 0.02, stdDev, steps));
-  const [upProb, setUpProb] = useState(() => get_up_move_probability(stockPrice, strikePrice, timeToExpiration, RFR, 0.02, stdDev, steps));
-  const [downMove, setDownMove] = useState(() => get_down_move_size(stockPrice, strikePrice, timeToExpiration, RFR, 0.02, stdDev, steps));
+  const [upMove, setUpMove] = useState(() => get_up_move_size(stockPrice, strikePrice, timeToExpiration, RFR, 0.02, volatility, steps));
+  const [upProb, setUpProb] = useState(() => get_up_move_probability(stockPrice, strikePrice, timeToExpiration, RFR, 0.02, volatility, steps));
+  const [downMove, setDownMove] = useState(() => get_down_move_size(stockPrice, strikePrice, timeToExpiration, RFR, 0.02, volatility, steps));
   const [downProb, setDownProb] = useState(() => get_down_move_probability(upProb));
   const [resetCount, setResetCount] = useState(0);
   const echartRef = useRef(null);
@@ -182,6 +191,8 @@ function Dashboard({
   };
   const [nodes, setNodes] = useState([root]);
   const [links, setLinks] = useState([]);
+
+  let iterations = 0;
 
   useEffect(() => {
     updateTimeStep(steps);
@@ -204,10 +215,27 @@ function Dashboard({
     chartInstance.setOption(getGraphOption());
   }, [resetCount]);
 
-  useEffect(() => {
+  const processGraphData = async () => {
     id = 0;
     map = {};
+
     let graphData = createGraphData(steps, stockPrice, 0, optionType);
+
+    if (graphData.nodes[0].optionPrice !== optionPrice && iterations < 3) {
+      console.log("got price", graphData.nodes[0].optionPrice, "compared to real price", optionPrice)
+      let d1 = d_one(stockPrice, strikePrice, timeToExpiration, RFR, 0.02, volatility)
+      let vega = get_vega(stockPrice, timeToExpiration, 0.02, d1)
+      console.log("old volatility:", volatility)
+      console.log("new volatility:", volatility - (graphData.nodes[0].optionPrice - optionPrice) / vega)
+      // setVolatility()
+      await new Promise(r => setTimeout(r, 2000));
+
+      updateTimeStep(steps)
+      graphData = createGraphData(steps, stockPrice, 0, optionType);
+      iterations += 1
+      console.log("entered volatility calculation", iterations, "times")
+    }
+
     graphData.nodes.forEach(node => {
       node.name = node.name.replace(/\n.*$/, '');
       if ((node.optionValue < optionPrice && optionType == "call") || (node.optionValue > optionPrice && optionType == "put")) {
@@ -220,15 +248,21 @@ function Dashboard({
     });
     setNodes(graphData.nodes);
     setLinks(graphData.links);
+  }
+
+  useEffect(() => {
+    if (iterations < 3)
+      processGraphData()
+    iterations += 1;
   }, [steps, upMove, downMove, riskNeutralProbability, optionType, stockPrice, stdDev]);
 
   const updateTimeStep = (timeSteps) => {
     id = 0;
     map = {};
     let newDeltaT = (timeToExpiration / timeSteps) || 1;
-    let newUpMove = get_up_move_size(stockPrice, strikePrice, timeToExpiration, RFR, 0.02, stdDev, steps);
-    let newUpMoveProb = get_up_move_probability(stockPrice, strikePrice, timeToExpiration, RFR, 0.02, stdDev, steps)
-    let newDownMove = get_down_move_size(stockPrice, strikePrice, timeToExpiration, RFR, 0.02, stdDev, steps);
+    let newUpMove = get_up_move_size(stockPrice, strikePrice, timeToExpiration, RFR, 0.02, volatility, steps);
+    let newUpMoveProb = get_up_move_probability(stockPrice, strikePrice, timeToExpiration, RFR, 0.02, volatility, steps)
+    let newDownMove = get_down_move_size(stockPrice, strikePrice, timeToExpiration, RFR, 0.02, volatility, steps);
     let newDownMoveProb = get_down_move_probability(newUpMoveProb);
     let newRNP = get_rnp(RFR, newDeltaT, newUpMove, newDownMove)
     setSteps(timeSteps);
@@ -249,6 +283,7 @@ function Dashboard({
     let optionValue = payoff;
     let nodeName = `${optionValue.toFixed(2)} \n${curSteps}-${id}`;
     if (map[nodeName]) return { nodes: [], links: [], name: nodeName, optionPrice: stockPrice, optionValue: optionValue, stockPrice: stockPrice };
+
     let node = {
       name: nodeName,
       value: "this is the value",
@@ -430,8 +465,8 @@ function Dashboard({
   };
 
   const getOptionPrice = async (ticker) => {
-    let newOptionPrice = await POLYGON_OPTIONS_DATA.getOptionPrice(ticker);
-    setOptionPrice(newOptionPrice)
+    // let newOptionPrice = await POLYGON_OPTIONS_DATA.getOptionPrice(ticker);
+    // setOptionPrice(newOptionPrice)
   }
   
   const getOptionsContracts = async () => {
@@ -512,7 +547,7 @@ function Dashboard({
             </div>
             <div className="stats-item">
               <label className="stats-name">Volatility</label>
-              <p className="stats-value">{stdDev.toFixed(2)}</p>
+              <p className="stats-value">{volatility.toFixed(2)}</p> {/* stdDev.toFixed(2) */}
             </div>
           </div>
         )}
